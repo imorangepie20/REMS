@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import { errorHandler } from './middleware/errorHandler';
 import { sessionMiddleware } from './auth/middleware';
 import { authRouter } from './auth/routes';
+import { listingsRouter } from './listings/routes';
 
 /** Express 앱을 생성한다 (테스트에서 직접 import 한다) */
 export function createApp(): Express {
@@ -16,6 +17,7 @@ export function createApp(): Express {
   });
 
   app.use('/api/auth', authRouter);
+  app.use('/api/listings', listingsRouter);
 
   app.use(errorHandler);
   return app;
