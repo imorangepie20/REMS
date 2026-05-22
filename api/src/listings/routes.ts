@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createListingSchema, listingFilterSchema } from '@rems/shared';
+import { createListingSchema, updateListingSchema, listingFilterSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
 import { NotFoundError } from '../errors';
@@ -109,4 +109,46 @@ listingsRouter.get('/', async (req, res) => {
 listingsRouter.get('/:id', async (req, res) => {
   const listing = await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
   res.json(toListingResponse(listing));
+});
+
+listingsRouter.patch('/:id', async (req, res) => {
+  await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
+  const data = updateListingSchema.parse(req.body);
+  const updated = await prisma.listing.update({
+    where: { id: BigInt(Number(req.params.id)) },
+    data: {
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.dealType !== undefined ? { dealType: data.dealType } : {}),
+      ...(data.propertyType !== undefined ? { propertyType: data.propertyType } : {}),
+      ...(data.salePrice !== undefined
+        ? { salePrice: data.salePrice == null ? null : BigInt(data.salePrice) }
+        : {}),
+      ...(data.deposit !== undefined
+        ? { deposit: data.deposit == null ? null : BigInt(data.deposit) }
+        : {}),
+      ...(data.monthlyRent !== undefined
+        ? { monthlyRent: data.monthlyRent == null ? null : BigInt(data.monthlyRent) }
+        : {}),
+      ...(data.areaM2 !== undefined ? { areaM2: data.areaM2 } : {}),
+      ...(data.address !== undefined ? { address: data.address } : {}),
+      ...(data.addressDetail !== undefined ? { addressDetail: data.addressDetail } : {}),
+      ...(data.latitude !== undefined ? { latitude: data.latitude } : {}),
+      ...(data.longitude !== undefined ? { longitude: data.longitude } : {}),
+      ...(data.floor !== undefined ? { floor: data.floor } : {}),
+      ...(data.totalFloors !== undefined ? { totalFloors: data.totalFloors } : {}),
+      ...(data.rooms !== undefined ? { rooms: data.rooms } : {}),
+      ...(data.bathrooms !== undefined ? { bathrooms: data.bathrooms } : {}),
+      ...(data.builtYear !== undefined ? { builtYear: data.builtYear } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.description !== undefined ? { description: data.description } : {}),
+    },
+    include: { photos: { orderBy: { sortOrder: 'asc' } } },
+  });
+  res.json(toListingResponse(updated));
+});
+
+listingsRouter.delete('/:id', async (req, res) => {
+  await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
+  await prisma.listing.delete({ where: { id: BigInt(Number(req.params.id)) } });
+  res.status(204).send();
 });

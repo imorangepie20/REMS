@@ -102,3 +102,44 @@ describe('GET /api/listings/:id', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('PATCH /api/listings/:id', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('매물을 수정한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/listings').send(sampleListing);
+    const res = await agent
+      .patch(`/api/listings/${created.body.id}`)
+      .send({ title: '수정된 제목', status: 'completed' });
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe('수정된 제목');
+    expect(res.body.status).toBe('completed');
+  });
+
+  it('없는 매물 수정은 404', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const res = await agent.patch('/api/listings/999999').send({ title: 'x' });
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('DELETE /api/listings/:id', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('매물을 삭제하고 204를 반환한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/listings').send(sampleListing);
+    const del = await agent.delete(`/api/listings/${created.body.id}`);
+    expect(del.status).toBe(204);
+    const after = await agent.get(`/api/listings/${created.body.id}`);
+    expect(after.status).toBe(404);
+  });
+});
