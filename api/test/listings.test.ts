@@ -182,3 +182,30 @@ describe('POST /api/listings/:id/photos', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('DELETE /api/listings/:id/photos/:photoId', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('사진을 삭제한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/listings').send(sampleListing);
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const photo = await agent
+      .post(`/api/listings/${created.body.id}/photos`)
+      .attach('photo', png, 'test.png');
+
+    const del = await agent.delete(
+      `/api/listings/${created.body.id}/photos/${photo.body.id}`,
+    );
+    expect(del.status).toBe(204);
+
+    const detail = await agent.get(`/api/listings/${created.body.id}`);
+    expect(detail.body.photos).toHaveLength(0);
+  });
+});

@@ -154,6 +154,20 @@ listingsRouter.delete('/:id', async (req, res) => {
   res.status(204).send();
 });
 
+listingsRouter.delete('/:id/photos/:photoId', async (req, res) => {
+  await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
+  const photoId = Number(req.params.photoId);
+  if (!Number.isInteger(photoId) || photoId <= 0) {
+    throw new NotFoundError('사진을 찾을 수 없습니다');
+  }
+  const photo = await prisma.listingPhoto.findFirst({
+    where: { id: BigInt(photoId), listingId: BigInt(Number(req.params.id)) },
+  });
+  if (!photo) throw new NotFoundError('사진을 찾을 수 없습니다');
+  await prisma.listingPhoto.delete({ where: { id: photo.id } });
+  res.status(204).send();
+});
+
 listingsRouter.post('/:id/photos', async (req, res, next) => {
   // 매물 소유 확인을 업로드보다 먼저
   await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
