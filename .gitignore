@@ -4,3 +4,4 @@ dist/
 *.tsbuildinfo
 .env
 api/uploads/
+web/package-lock.json
