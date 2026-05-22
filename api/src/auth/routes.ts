@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { signupSchema } from '@rems/shared';
+import { signupSchema, loginSchema } from '@rems/shared';
 import { prisma } from '../db';
-import { hashPassword } from './password';
+import { hashPassword, verifyPassword } from './password';
 import { createSession } from './session';
 import { config } from '../config';
-import { ConflictError } from '../errors';
+import { ConflictError, UnauthorizedError } from '../errors';
 
 export const authRouter = Router();
 
@@ -52,5 +52,38 @@ authRouter.post('/signup', async (req, res) => {
       id: result.agency.id,
       name: result.agency.name,
     },
+  });
+});
+
+authRouter.post('/login', async (req, res) => {
+  const { email, password } = loginSchema.parse(req.body);
+
+  const agent = await prisma.agent.findUnique({ where: { email } });
+  if (!agent) throw new UnauthorizedError('이메일 또는 비밀번호가 올바르지 않습니다');
+
+  const ok = await verifyPassword(password, agent.passwordHash);
+  if (!ok) throw new UnauthorizedError('이메일 또는 비밀번호가 올바르지 않습니다');
+
+  const agency = await prisma.agency.findUnique({ where: { id: agent.agencyId } });
+  if (!agency) throw new UnauthorizedError();
+
+  const token = await createSession(agent.id);
+  res.cookie(config.session.cookieName, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+    maxAge: config.session.ttlMs,
+    path: '/',
+  });
+
+  res.json({
+    agent: {
+      id: agent.id,
+      email: agent.email,
+      name: agent.name,
+      role: agent.role,
+      agencyId: agent.agencyId,
+    },
+    agency: { id: agency.id, name: agency.name },
   });
 });

@@ -54,3 +54,40 @@ describe('POST /api/auth/signup', () => {
     expect(res.body.error.code).toBe('VALIDATION');
   });
 });
+
+describe('POST /api/auth/login', () => {
+  beforeEach(async () => {
+    await resetDb();
+    // signup으로 사용자 하나 준비
+    await request(createApp())
+      .post('/api/auth/signup')
+      .send({
+        agency: { name: 'A부동산' },
+        owner: { email: 'login@example.com', password: 'password123', name: '로그인테스트' },
+      });
+  });
+
+  it('올바른 이메일·비밀번호로 200 + 세션 쿠키를 반환한다', async () => {
+    const res = await request(createApp())
+      .post('/api/auth/login')
+      .send({ email: 'login@example.com', password: 'password123' });
+    expect(res.status).toBe(200);
+    expect(res.body.agent.email).toBe('login@example.com');
+    expect(res.headers['set-cookie']?.[0]).toMatch(/^rems_session=[a-f0-9]{64}/);
+  });
+
+  it('잘못된 비밀번호면 401을 반환한다', async () => {
+    const res = await request(createApp())
+      .post('/api/auth/login')
+      .send({ email: 'login@example.com', password: 'wrongpass' });
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('존재하지 않는 이메일이면 401을 반환한다', async () => {
+    const res = await request(createApp())
+      .post('/api/auth/login')
+      .send({ email: 'nobody@example.com', password: 'password123' });
+    expect(res.status).toBe(401);
+  });
+});
