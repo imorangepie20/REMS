@@ -1,6 +1,13 @@
 import 'dotenv/config';
 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL 환경 변수가 설정되지 않았습니다 (api/.env 확인)');
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 3000),
-  databaseUrl: process.env.DATABASE_URL ?? '',
+  session: {
+    cookieName: 'rems_session',
+    ttlMs: 30 * 24 * 60 * 60 * 1000, // 30일
+  },
 };
