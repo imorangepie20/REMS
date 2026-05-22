@@ -143,3 +143,42 @@ describe('DELETE /api/listings/:id', () => {
     expect(after.status).toBe(404);
   });
 });
+
+describe('POST /api/listings/:id/photos', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('매물에 사진을 추가한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/listings').send(sampleListing);
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const res = await agent
+      .post(`/api/listings/${created.body.id}/photos`)
+      .attach('photo', png, 'test.png');
+    expect(res.status).toBe(201);
+    expect(res.body.url).toMatch(/^\/uploads\/[a-f0-9]{32}\.png$/);
+
+    const detail = await agent.get(`/api/listings/${created.body.id}`);
+    expect(detail.body.photos).toHaveLength(1);
+  });
+
+  it('타 사무소 매물에는 사진을 못 올린다 (404)', async () => {
+    const app = createApp();
+    const agentA = await signupAgent(app, { agencyName: 'A', email: 'a@example.com' });
+    const created = await agentA.post('/api/listings').send(sampleListing);
+    const agentB = await signupAgent(app, { agencyName: 'B', email: 'b@example.com' });
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const res = await agentB
+      .post(`/api/listings/${created.body.id}/photos`)
+      .attach('photo', png, 'test.png');
+    expect(res.status).toBe(404);
+  });
+});

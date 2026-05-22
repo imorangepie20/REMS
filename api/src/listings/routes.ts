@@ -3,6 +3,7 @@ import { createListingSchema, updateListingSchema, listingFilterSchema } from '@
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
 import { NotFoundError } from '../errors';
+import { photoUpload } from './upload';
 
 export const listingsRouter = Router();
 
@@ -151,4 +152,30 @@ listingsRouter.delete('/:id', async (req, res) => {
   await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
   await prisma.listing.delete({ where: { id: BigInt(Number(req.params.id)) } });
   res.status(204).send();
+});
+
+listingsRouter.post('/:id/photos', async (req, res, next) => {
+  // 매물 소유 확인을 업로드보다 먼저
+  await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
+  photoUpload(req, res, (err: unknown) => {
+    if (err) return next(err);
+    void (async () => {
+      try {
+        if (!req.file) throw new NotFoundError('업로드된 파일이 없습니다');
+        const count = await prisma.listingPhoto.count({
+          where: { listingId: BigInt(Number(req.params.id)) },
+        });
+        const photo = await prisma.listingPhoto.create({
+          data: {
+            listingId: BigInt(Number(req.params.id)),
+            url: `/uploads/${req.file.filename}`,
+            sortOrder: count,
+          },
+        });
+        res.status(201).json({ id: photo.id, url: photo.url, sortOrder: photo.sortOrder });
+      } catch (e) {
+        next(e);
+      }
+    })();
+  });
 });

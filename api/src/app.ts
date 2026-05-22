@@ -9,6 +9,7 @@ import { listingsRouter } from './listings/routes';
 export function createApp(): Express {
   const app = express();
   app.use(express.json());
+  app.use('/uploads', express.static('uploads'));
   app.use(cookieParser());
   app.use(sessionMiddleware);
 
