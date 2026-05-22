@@ -7,6 +7,10 @@ export class AppError extends Error {
     public readonly details?: unknown,
   ) {
     super(message);
+    this.name = new.target.name;
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, new.target);
+    }
   }
 }
 
