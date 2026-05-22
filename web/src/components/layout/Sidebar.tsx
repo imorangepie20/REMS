@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
     LayoutDashboard,
     BarChart3,
+    Building,
     Mail,
     Grid3X3,
     User,
@@ -39,6 +40,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
     { title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
     { title: 'Analytics', icon: <BarChart3 size={20} />, path: '/analytics' },
+    { title: '매물', icon: <Building size={20} />, path: '/listings' },
     {
         title: 'Email',
         icon: <Mail size={20} />,

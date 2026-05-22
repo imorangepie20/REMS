@@ -26,6 +26,11 @@ import Gallery from './pages/Gallery'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 
+// Listings
+import ListingList from './pages/listings/ListingList'
+import ListingDetail from './pages/listings/ListingDetail'
+import ListingForm from './pages/listings/ListingForm'
+
 // AI Studio
 import AiChat from './pages/ai/AiChat'
 import AiImageGenerator from './pages/ai/AiImageGenerator'
@@ -127,6 +132,12 @@ function App() {
 
                     {/* Charts */}
                     <Route path="chart/chartjs" element={<ChartJs />} />
+
+                    {/* Listings */}
+                    <Route path="listings" element={<ListingList />} />
+                    <Route path="listings/new" element={<ListingForm />} />
+                    <Route path="listings/:id" element={<ListingDetail />} />
+                    <Route path="listings/:id/edit" element={<ListingForm />} />
 
                     {/* Tidal Player Test */}
                     <Route path="tidal-player" element={<TidalPlayerPage />} />
