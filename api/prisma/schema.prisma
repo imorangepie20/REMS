@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Agency {
+  id             BigInt     @id @default(autoincrement())
+  name           String     @db.VarChar(255)
+  businessNumber String?    @map("business_number") @db.VarChar(20)
+  phone          String?    @db.VarChar(20)
+  address        String?    @db.VarChar(255)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  agents         Agent[]
+  listings       Listing[]
+  customers      Customer[]
+
+  @@map("agency")
+}
+
+enum AgentRole {
+  owner
+  member
+}
+
+enum AgentStatus {
+  active
+  inactive
+}
+
+model Agent {
+  id           BigInt      @id @default(autoincrement())
+  agencyId     BigInt      @map("agency_id")
+  email        String      @unique @db.VarChar(255)
+  passwordHash String      @map("password_hash") @db.VarChar(255)
+  name         String      @db.VarChar(100)
+  phone        String?     @db.VarChar(20)
+  role         AgentRole
+  status       AgentStatus @default(active)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  agency       Agency      @relation(fields: [agencyId], references: [id])
+  sessions     Session[]
+  listings     Listing[]
+  customers    Customer[]
+
+  @@index([agencyId])
+  @@map("agent")
+}
+
+model Session {
+  id        String   @id @db.VarChar(64)
+  agentId   BigInt   @map("agent_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@map("session")
+}
+
+enum ListingSource {
+  manual
+  naver
+  public_data
+}
+
+enum DealType {
+  sale
+  jeonse
+  wolse
+}
+
+enum PropertyType {
+  apartment
+  officetel
+  house
+  commercial
+  land
+}
+
+enum ListingStatus {
+  active
+  completed
+  hidden
+}
+
+model Listing {
+  id            BigInt            @id @default(autoincrement())
+  agencyId      BigInt            @map("agency_id")
+  createdBy     BigInt            @map("created_by")
+  source        ListingSource     @default(manual)
+  sourceId      String?           @map("source_id") @db.VarChar(100)
+  title         String            @db.VarChar(255)
+  dealType      DealType          @map("deal_type")
+  propertyType  PropertyType      @map("property_type")
+  salePrice     BigInt?           @map("sale_price")
+  deposit       BigInt?
+  monthlyRent   BigInt?           @map("monthly_rent")
+  areaM2        Decimal           @map("area_m2") @db.Decimal(10, 2)
+  address       String            @db.VarChar(255)
+  addressDetail String?           @map("address_detail") @db.VarChar(255)
+  latitude      Decimal?          @db.Decimal(10, 7)
+  longitude     Decimal?          @db.Decimal(10, 7)
+  floor         Int?
+  totalFloors   Int?              @map("total_floors")
+  rooms         Int?
+  bathrooms     Int?
+  builtYear     Int?              @map("built_year")
+  status        ListingStatus     @default(active)
+  description   String?           @db.Text
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  agency        Agency            @relation(fields: [agencyId], references: [id])
+  creator       Agent             @relation(fields: [createdBy], references: [id])
+  photos        ListingPhoto[]
+  customerLinks CustomerListing[]
+
+  @@unique([agencyId, source, sourceId])
+  @@index([agencyId, status])
+  @@map("listing")
+}
+
+model ListingPhoto {
+  id        BigInt   @id @default(autoincrement())
+  listingId BigInt   @map("listing_id")
+  url       String   @db.VarChar(500)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_photo")
+}
+
+enum CustomerType {
+  buyer
+  seller
+  tenant
+  landlord
+}
+
+model Customer {
+  id           BigInt            @id @default(autoincrement())
+  agencyId     BigInt            @map("agency_id")
+  ownerAgentId BigInt            @map("owner_agent_id")
+  name         String            @db.VarChar(100)
+  phone        String?           @db.VarChar(20)
+  customerType CustomerType      @map("customer_type")
+  budgetMin    BigInt?           @map("budget_min")
+  budgetMax    BigInt?           @map("budget_max")
+  desiredArea  String?           @map("desired_area") @db.VarChar(255)
+  memo         String?           @db.Text
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  agency       Agency            @relation(fields: [agencyId], references: [id])
+  ownerAgent   Agent             @relation(fields: [ownerAgentId], references: [id])
+  listingLinks CustomerListing[]
+
+  @@index([agencyId, ownerAgentId])
+  @@map("customer")
+}
+
+enum MatchStatus {
+  suggested
+  interested
+  visited
+  contracted
+  rejected
+}
+
+model CustomerListing {
+  id         BigInt      @id @default(autoincrement())
+  customerId BigInt      @map("customer_id")
+  listingId  BigInt      @map("listing_id")
+  status     MatchStatus @default(suggested)
+  memo       String?     @db.Text
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  listing    Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, listingId])
+  @@map("customer_listing")
+}
