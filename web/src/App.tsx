@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout'
+import { AuthProvider } from './auth/AuthContext'
+import { RequireAuth } from './auth/RequireAuth'
 
 // Dashboard
 import Dashboard from './pages/dashboard/Dashboard'
@@ -22,7 +24,7 @@ import Gallery from './pages/Gallery'
 
 // Auth
 import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
+import Signup from './pages/auth/Signup'
 
 // AI Studio
 import AiChat from './pages/ai/AiChat'
@@ -66,15 +68,16 @@ import TidalPlayerPage from './pages/TidalPlayerPage'
 function App() {
     return (
         <Router>
+            <AuthProvider>
             <Routes>
-                {/* Auth Pages (No Layout) */}
+                {/* Public Pages (No Auth Required) */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                <Route path="/signup" element={<Signup />} />
                 <Route path="/coming-soon" element={<ComingSoon />} />
                 <Route path="/404" element={<Error404 />} />
 
-                {/* Main Layout Pages */}
-                <Route path="/" element={<MainLayout />}>
+                {/* Protected Pages */}
+                <Route path="/" element={<RequireAuth><MainLayout /></RequireAuth>}>
                     <Route index element={<Dashboard />} />
                     <Route path="analytics" element={<Analytics />} />
 
@@ -132,6 +135,7 @@ function App() {
                 {/* 404 Fallback */}
                 <Route path="*" element={<Error404 />} />
             </Routes>
+            </AuthProvider>
         </Router>
     )
 }
