@@ -46,3 +46,59 @@ describe('POST /api/listings', () => {
     expect(res.body.error.code).toBe('VALIDATION');
   });
 });
+
+describe('GET /api/listings', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('우리 사무소 매물 목록을 페이지네이션 형태로 반환한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    await agent.post('/api/listings').send(sampleListing);
+    await agent.post('/api/listings').send({ ...sampleListing, title: '두 번째 매물' });
+
+    const res = await agent.get('/api/listings');
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.page).toBe(1);
+  });
+
+  it('dealType 필터가 동작한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    await agent.post('/api/listings').send(sampleListing); // sale
+    await agent
+      .post('/api/listings')
+      .send({ title: '전세집', dealType: 'jeonse', propertyType: 'house', deposit: 300000000, areaM2: 60, address: '서울 마포구' });
+
+    const res = await agent.get('/api/listings?dealType=jeonse');
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.data[0].title).toBe('전세집');
+  });
+});
+
+describe('GET /api/listings/:id', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('매물 상세를 반환한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/listings').send(sampleListing);
+    const res = await agent.get(`/api/listings/${created.body.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(created.body.id);
+    expect(res.body.title).toBe('강남 아파트');
+  });
+
+  it('없는 매물이면 404', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const res = await agent.get('/api/listings/999999');
+    expect(res.status).toBe(404);
+  });
+});

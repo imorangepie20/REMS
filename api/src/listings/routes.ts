@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { createListingSchema } from '@rems/shared';
+import { createListingSchema, listingFilterSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
+import { NotFoundError } from '../errors';
 
 export const listingsRouter = Router();
 
@@ -56,4 +57,56 @@ listingsRouter.post('/', async (req, res) => {
     include: { photos: true },
   });
   res.status(201).json(toListingResponse(created));
+});
+
+/** 우리 사무소의 매물을 id로 찾는다. 없거나 타 사무소면 404. */
+async function findOwnListingOrThrow(id: string, agencyId: bigint) {
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    throw new NotFoundError('매물을 찾을 수 없습니다');
+  }
+  const listing = await prisma.listing.findFirst({
+    where: { id: BigInt(numericId), agencyId },
+    include: { photos: { orderBy: { sortOrder: 'asc' } } },
+  });
+  if (!listing) throw new NotFoundError('매물을 찾을 수 없습니다');
+  return listing;
+}
+
+listingsRouter.get('/', async (req, res) => {
+  const filter = listingFilterSchema.parse(req.query);
+  const agencyId = req.agent!.agencyId;
+
+  const where = {
+    agencyId,
+    ...(filter.dealType ? { dealType: filter.dealType } : {}),
+    ...(filter.propertyType ? { propertyType: filter.propertyType } : {}),
+    ...(filter.status ? { status: filter.status } : {}),
+    ...(filter.q
+      ? { OR: [{ title: { contains: filter.q } }, { address: { contains: filter.q } }] }
+      : {}),
+  };
+
+  const [rows, total] = await Promise.all([
+    prisma.listing.findMany({
+      where,
+      include: { photos: { orderBy: { sortOrder: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+      skip: (filter.page - 1) * filter.limit,
+      take: filter.limit,
+    }),
+    prisma.listing.count({ where }),
+  ]);
+
+  res.json({
+    data: rows.map(toListingResponse),
+    total,
+    page: filter.page,
+    limit: filter.limit,
+  });
+});
+
+listingsRouter.get('/:id', async (req, res) => {
+  const listing = await findOwnListingOrThrow(req.params.id, req.agent!.agencyId);
+  res.json(toListingResponse(listing));
 });
