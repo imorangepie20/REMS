@@ -91,3 +91,28 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('GET /api/auth/me', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('쿠키 없으면 401', async () => {
+    const res = await request(createApp()).get('/api/auth/me');
+    expect(res.status).toBe(401);
+  });
+
+  it('유효한 세션 쿠키로 200 + 현재 agent/agency를 반환한다', async () => {
+    const agent = request.agent(createApp()); // 쿠키 유지
+    await agent
+      .post('/api/auth/signup')
+      .send({
+        agency: { name: '셀러스부동산' },
+        owner: { email: 'me@example.com', password: 'password123', name: '현재유저' },
+      });
+    const res = await agent.get('/api/auth/me');
+    expect(res.status).toBe(200);
+    expect(res.body.agent.email).toBe('me@example.com');
+    expect(res.body.agency.name).toBe('셀러스부동산');
+  });
+});

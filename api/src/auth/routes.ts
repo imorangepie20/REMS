@@ -3,6 +3,7 @@ import { signupSchema, loginSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { hashPassword, verifyPassword } from './password';
 import { createSession } from './session';
+import { requireAuth } from './middleware';
 import { config } from '../config';
 import { ConflictError, UnauthorizedError } from '../errors';
 
@@ -76,6 +77,24 @@ authRouter.post('/login', async (req, res) => {
     path: '/',
   });
 
+  res.json({
+    agent: {
+      id: agent.id,
+      email: agent.email,
+      name: agent.name,
+      role: agent.role,
+      agencyId: agent.agencyId,
+    },
+    agency: { id: agency.id, name: agency.name },
+  });
+});
+
+authRouter.get('/me', requireAuth, async (req, res) => {
+  const agentId = req.agent!.id;
+  const agent = await prisma.agent.findUnique({ where: { id: agentId } });
+  if (!agent) throw new UnauthorizedError();
+  const agency = await prisma.agency.findUnique({ where: { id: agent.agencyId } });
+  if (!agency) throw new UnauthorizedError();
   res.json({
     agent: {
       id: agent.id,
