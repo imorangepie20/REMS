@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { signupSchema, loginSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { hashPassword, verifyPassword } from './password';
-import { createSession } from './session';
+import { createSession, destroySession } from './session';
 import { requireAuth } from './middleware';
 import { config } from '../config';
 import { ConflictError, UnauthorizedError } from '../errors';
@@ -105,4 +105,11 @@ authRouter.get('/me', requireAuth, async (req, res) => {
     },
     agency: { id: agency.id, name: agency.name },
   });
+});
+
+authRouter.post('/logout', async (req, res) => {
+  const token = req.cookies?.[config.session.cookieName];
+  if (token) await destroySession(token);
+  res.clearCookie(config.session.cookieName, { path: '/' });
+  res.status(204).send();
 });

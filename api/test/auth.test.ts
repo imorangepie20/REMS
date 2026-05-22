@@ -116,3 +116,24 @@ describe('GET /api/auth/me', () => {
     expect(res.body.agency.name).toBe('셀러스부동산');
   });
 });
+
+describe('POST /api/auth/logout', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('세션을 무효화한다 — 이후 /me는 401', async () => {
+    const agent = request.agent(createApp());
+    await agent
+      .post('/api/auth/signup')
+      .send({
+        agency: { name: '아웃부동산' },
+        owner: { email: 'out@example.com', password: 'password123', name: '로그아웃' },
+      });
+    expect((await agent.get('/api/auth/me')).status).toBe(200);
+    const logout = await agent.post('/api/auth/logout');
+    expect(logout.status).toBe(204);
+    // 쿠키가 만료되었더라도 supertest agent는 헤더를 그대로 보내지만, 서버 DB에서 세션이 삭제돼 401이 된다
+    expect((await agent.get('/api/auth/me')).status).toBe(401);
+  });
+});
