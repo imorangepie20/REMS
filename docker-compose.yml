@@ -1,0 +1,22 @@
+services:
+  db:
+    image: mariadb:11.4
+    container_name: rems-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: rems
+      MARIADB_USER: rems
+      MARIADB_PASSWORD: rems
+    ports:
+      - "3306:3306"
+    volumes:
+      - rems-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  rems-db-data:
