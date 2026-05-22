@@ -58,7 +58,7 @@ const Error404 = () => {
                     <div className="flex flex-wrap justify-center gap-3">
                         {[
                             { label: 'Dashboard', path: '/' },
-                            { label: 'Analytics', path: '/analytics' },
+                            { label: '매물', path: '/listings' },
                             { label: 'Settings', path: '/settings' },
                             { label: 'Profile', path: '/profile' },
                         ].map((link) => (

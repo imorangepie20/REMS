@@ -17,6 +17,7 @@ type FormState = {
   areaM2: string
   address: string
   description: string
+  status: 'active' | 'completed' | 'hidden'
 }
 
 const empty: FormState = {
@@ -29,6 +30,7 @@ const empty: FormState = {
   areaM2: '',
   address: '',
   description: '',
+  status: 'active',
 }
 
 function toNumber(s: string): number | undefined {
@@ -63,6 +65,7 @@ export default function ListingForm() {
         areaM2: l.areaM2.toString(),
         address: l.address,
         description: l.description ?? '',
+        status: l.status,
       })
       setLoaded(true)
       return l
@@ -87,7 +90,7 @@ export default function ListingForm() {
         description: form.description || undefined,
       }
       const saved = isEdit
-        ? await updateListing(listingId, payload)
+        ? await updateListing(listingId, { ...payload, status: form.status })
         : await createListing(payload)
       if (photoFile) await uploadListingPhoto(saved.id, photoFile)
       return saved
@@ -144,6 +147,17 @@ export default function ListingForm() {
           onChange={(e) => set('address', e.target.value)} />
         <textarea className={inputCls} placeholder="설명" rows={4} value={form.description}
           onChange={(e) => set('description', e.target.value)} />
+        {isEdit && (
+          <label className="block text-sm text-slate-700">
+            거래 상태
+            <select className={inputCls} value={form.status}
+              onChange={(e) => set('status', e.target.value)}>
+              <option value="active">거래중</option>
+              <option value="completed">거래완료</option>
+              <option value="hidden">숨김</option>
+            </select>
+          </label>
+        )}
         <input type="file" accept="image/*"
           onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)} />
         {error && <p className="text-sm text-red-600">{error}</p>}

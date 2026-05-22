@@ -21,7 +21,6 @@ import ListingForm from './pages/listings/ListingForm'
 
 // Misc Pages
 import Error404 from './pages/Error404'
-import ComingSoon from './pages/ComingSoon'
 
 function App() {
     return (
@@ -31,7 +30,6 @@ function App() {
                 {/* Public Pages (No Auth Required) */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/coming-soon" element={<ComingSoon />} />
 
                 {/* Protected Pages */}
                 <Route path="/" element={<RequireAuth><MainLayout /></RequireAuth>}>
