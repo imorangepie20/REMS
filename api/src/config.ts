@@ -9,5 +9,6 @@ export const config = {
   session: {
     cookieName: 'rems_session',
     ttlMs: 30 * 24 * 60 * 60 * 1000, // 30일
+    secure: process.env.NODE_ENV === 'production', // 프로덕션(HTTPS)에서만 Secure 쿠키
   },
 };

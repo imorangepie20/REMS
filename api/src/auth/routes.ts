@@ -9,6 +9,15 @@ import { ConflictError, UnauthorizedError } from '../errors';
 
 export const authRouter = Router();
 
+/** signup·login 공통 세션 쿠키 옵션 */
+const sessionCookieOptions = {
+  httpOnly: true,
+  sameSite: 'lax' as const,
+  secure: config.session.secure,
+  maxAge: config.session.ttlMs,
+  path: '/',
+};
+
 authRouter.post('/signup', async (req, res) => {
   const data = signupSchema.parse(req.body);
 
@@ -33,13 +42,7 @@ authRouter.post('/signup', async (req, res) => {
   });
 
   const token = await createSession(result.agent.id);
-  res.cookie(config.session.cookieName, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false, // 개발용 — 프로덕션에선 HTTPS + true
-    maxAge: config.session.ttlMs,
-    path: '/',
-  });
+  res.cookie(config.session.cookieName, token, sessionCookieOptions);
 
   res.status(201).json({
     agent: {
@@ -69,13 +72,7 @@ authRouter.post('/login', async (req, res) => {
   if (!agency) throw new UnauthorizedError();
 
   const token = await createSession(agent.id);
-  res.cookie(config.session.cookieName, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
-    maxAge: config.session.ttlMs,
-    path: '/',
-  });
+  res.cookie(config.session.cookieName, token, sessionCookieOptions);
 
   res.json({
     agent: {

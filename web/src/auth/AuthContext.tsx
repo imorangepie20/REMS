@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { AuthResponse, SignupRequest } from '@rems/shared'
-import { apiFetch, ApiError } from '../api/client'
+import { apiFetch } from '../api/client'
 
 interface AuthState {
   agent: AuthResponse['agent'] | null
@@ -32,12 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     apiFetch<AuthResponse>('/auth/me')
       .then((data) => setState({ agent: data.agent, agency: data.agency, loading: false }))
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) {
-          setState({ agent: null, agency: null, loading: false })
-        } else {
-          setState({ agent: null, agency: null, loading: false })
-        }
+      .catch(() => {
+        setState({ agent: null, agency: null, loading: false })
       })
   }, [])
 
