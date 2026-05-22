@@ -1,3 +1,4 @@
+import './bigint-json';
 import { createApp } from './app';
 import { config } from './config';
 
