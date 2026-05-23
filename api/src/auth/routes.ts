@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signupSchema, loginSchema } from '@rems/shared';
+import { signupSchema, loginSchema, changePasswordSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { hashPassword, verifyPassword } from './password';
 import { createSession, destroySession } from './session';
@@ -108,5 +108,16 @@ authRouter.post('/logout', async (req, res) => {
   const token = req.cookies?.[config.session.cookieName];
   if (token) await destroySession(token);
   res.clearCookie(config.session.cookieName, { path: '/' });
+  res.status(204).send();
+});
+
+authRouter.patch('/password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+  const agent = await prisma.agent.findUnique({ where: { id: req.agent!.id } });
+  if (!agent) throw new UnauthorizedError();
+  const ok = await verifyPassword(currentPassword, agent.passwordHash);
+  if (!ok) throw new UnauthorizedError('현재 비밀번호가 올바르지 않습니다');
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.agent.update({ where: { id: agent.id }, data: { passwordHash } });
   res.status(204).send();
 });
