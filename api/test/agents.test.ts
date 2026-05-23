@@ -92,3 +92,56 @@ describe('POST /api/agents', () => {
     expect(dup.status).toBe(409);
   });
 });
+
+describe('PATCH /api/agents/:id', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('본인 프로필을 수정한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const me = await agent.get('/api/auth/me');
+    const res = await agent.patch(`/api/agents/${me.body.agent.id}`).send({ name: '바뀐이름', phone: '010-1111-2222' });
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('바뀐이름');
+    expect(res.body.phone).toBe('010-1111-2222');
+  });
+
+  it('owner가 멤버 status를 inactive로 바꿀 수 있다', async () => {
+    const app = createApp();
+    const owner = await signupAgent(app, { agencyName: 'A부동산', email: 'owner@example.com' });
+    const me = await owner.get('/api/auth/me');
+    await addMember(BigInt(me.body.agent.agencyId), 'm@example.com', '멤버');
+    const agents = await owner.get('/api/agents');
+    const member = (agents.body as Array<{ id: number; email: string }>).find((a) => a.email === 'm@example.com')!;
+
+    const res = await owner.patch(`/api/agents/${member.id}`).send({ status: 'inactive' });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('inactive');
+  });
+
+  it('member가 다른 사람의 status를 바꾸려 하면 403', async () => {
+    const app = createApp();
+    const owner = await signupAgent(app, { agencyName: 'A부동산', email: 'owner@example.com' });
+    const me = await owner.get('/api/auth/me');
+    await addMember(BigInt(me.body.agent.agencyId), 'm1@example.com', '멤버1');
+    await addMember(BigInt(me.body.agent.agencyId), 'm2@example.com', '멤버2');
+    const m1 = request.agent(app);
+    await m1.post('/api/auth/login').send({ email: 'm1@example.com', password: 'password123' });
+    const agents = await owner.get('/api/agents');
+    const m2Id = (agents.body as Array<{ id: number; email: string }>).find((a) => a.email === 'm2@example.com')!.id;
+
+    const res = await m1.patch(`/api/agents/${m2Id}`).send({ status: 'inactive' });
+    expect(res.status).toBe(403);
+  });
+
+  it('다른 사무소 agent 수정은 404', async () => {
+    const app = createApp();
+    const ownerA = await signupAgent(app, { agencyName: 'A부동산', email: 'a@example.com' });
+    const ownerB = await signupAgent(app, { agencyName: 'B부동산', email: 'b@example.com' });
+    const meB = await ownerB.get('/api/auth/me');
+    const res = await ownerA.patch(`/api/agents/${meB.body.agent.id}`).send({ name: 'x' });
+    expect(res.status).toBe(404);
+  });
+});

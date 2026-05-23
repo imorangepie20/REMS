@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import { createAgentSchema } from '@rems/shared';
+import { createAgentSchema, updateAgentSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
-import { ConflictError, ForbiddenError } from '../errors';
+import { ConflictError, ForbiddenError, NotFoundError } from '../errors';
 
 export const agentsRouter = Router();
 
@@ -50,4 +50,37 @@ agentsRouter.post('/', async (req, res) => {
     },
   });
   res.status(201).json(toAgentResponse(created));
+});
+
+agentsRouter.patch('/:id', async (req, res) => {
+  const numericId = Number(req.params.id);
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    throw new NotFoundError('중개사를 찾을 수 없습니다');
+  }
+  const target = await prisma.agent.findFirst({
+    where: { id: BigInt(numericId), agencyId: req.agent!.agencyId },
+  });
+  if (!target) throw new NotFoundError('중개사를 찾을 수 없습니다');
+
+  const data = updateAgentSchema.parse(req.body);
+  const isSelf = target.id === req.agent!.id;
+  const isOwner = req.agent!.role === 'owner';
+
+  if (data.status !== undefined) {
+    if (!isOwner) throw new ForbiddenError('status는 owner만 변경할 수 있습니다');
+    if (isSelf) throw new ForbiddenError('본인 status는 변경할 수 없습니다');
+  }
+  if ((data.name !== undefined || data.phone !== undefined) && !isSelf && !isOwner) {
+    throw new ForbiddenError('다른 중개사의 프로필은 수정할 수 없습니다');
+  }
+
+  const updated = await prisma.agent.update({
+    where: { id: target.id },
+    data: {
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.phone !== undefined ? { phone: data.phone } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+    },
+  });
+  res.json(toAgentResponse(updated));
 });
