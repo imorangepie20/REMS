@@ -21,8 +21,6 @@ import ListingForm from './pages/listings/ListingForm'
 
 // Customers
 import CustomerList from './pages/customers/CustomerList'
-import CustomerDetail from './pages/customers/CustomerDetail'
-import CustomerForm from './pages/customers/CustomerForm'
 
 // Misc Pages
 import Error404 from './pages/Error404'
@@ -52,9 +50,6 @@ function App() {
 
                     {/* Customers */}
                     <Route path="customers" element={<CustomerList />} />
-                    <Route path="customers/new" element={<CustomerForm />} />
-                    <Route path="customers/:id" element={<CustomerDetail />} />
-                    <Route path="customers/:id/edit" element={<CustomerForm />} />
 
                     {/* 404 Fallback — inside RequireAuth so unknown paths redirect to /login when unauthenticated */}
                     <Route path="*" element={<Error404 />} />
