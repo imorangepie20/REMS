@@ -1,6 +1,9 @@
 import { Router } from 'express';
+import bcrypt from 'bcrypt';
+import { createAgentSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
+import { ConflictError, ForbiddenError } from '../errors';
 
 export const agentsRouter = Router();
 
@@ -26,4 +29,25 @@ agentsRouter.get('/', async (req, res) => {
     orderBy: { createdAt: 'asc' },
   });
   res.json(agents.map(toAgentResponse));
+});
+
+agentsRouter.post('/', async (req, res) => {
+  if (req.agent!.role !== 'owner') throw new ForbiddenError('owner만 멤버를 생성할 수 있습니다');
+  const data = createAgentSchema.parse(req.body);
+
+  const exists = await prisma.agent.findUnique({ where: { email: data.email } });
+  if (exists) throw new ConflictError('이미 사용 중인 이메일입니다');
+
+  const passwordHash = await bcrypt.hash(data.password, 10);
+  const created = await prisma.agent.create({
+    data: {
+      agencyId: req.agent!.agencyId,
+      email: data.email,
+      passwordHash,
+      name: data.name,
+      phone: data.phone,
+      role: 'member',
+    },
+  });
+  res.status(201).json(toAgentResponse(created));
 });
