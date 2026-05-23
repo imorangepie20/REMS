@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
     LayoutDashboard,
     Building,
+    Users,
     User,
     Settings,
 } from 'lucide-react'
@@ -20,6 +21,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
     { title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
     { title: '매물', icon: <Building size={20} />, path: '/listings' },
+    { title: '고객', icon: <Users size={20} />, path: '/customers' },
     { title: 'Profile', icon: <User size={20} />, path: '/profile' },
     { title: 'Settings', icon: <Settings size={20} />, path: '/settings' },
 ]
