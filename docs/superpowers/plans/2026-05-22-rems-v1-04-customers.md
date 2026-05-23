@@ -436,7 +436,7 @@ describe('GET /api/customers/:id', () => {
 });
 ```
 
-(Note: `POST /api/agents` for member creation already exists from Plan 2 Task 12 — owner can create member accounts.)
+(Note: `POST /api/agents`는 Plan 5에서 추가될 예정이므로, Plan 4 테스트는 `addMember` 헬퍼로 멤버를 직접 DB로 생성한다.)
 
 - [ ] **Step 2: 테스트 실행 — 실패 확인**
 

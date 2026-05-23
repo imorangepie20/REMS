@@ -13,6 +13,7 @@ export interface ListingQuery {
   status?: string
   q?: string
   page?: number
+  limit?: number
 }
 
 export function listListings(query: ListingQuery = {}): Promise<Paginated<Listing>> {

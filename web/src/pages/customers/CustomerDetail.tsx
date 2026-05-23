@@ -47,8 +47,8 @@ export default function CustomerDetail() {
     enabled: !!customer,
   })
   const { data: listings } = useQuery({
-    queryKey: ['listings', { all: true }],
-    queryFn: () => listListings({ page: 1 }),
+    queryKey: ['listings', { matchPicker: true }],
+    queryFn: () => listListings({ page: 1, limit: 100 }),
   })
 
   const [pickListing, setPickListing] = useState('')
