@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCustomerSchema, customerFilterSchema } from '@rems/shared';
+import { createCustomerSchema, updateCustomerSchema, customerFilterSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
 import { NotFoundError } from '../errors';
@@ -99,4 +99,32 @@ customersRouter.get('/', async (req, res) => {
 customersRouter.get('/:id', async (req, res) => {
   const customer = await findOwnCustomerOrThrow(req.params.id, req.agent!);
   res.json(toCustomerResponse(customer));
+});
+
+customersRouter.patch('/:id', async (req, res) => {
+  await findOwnCustomerOrThrow(req.params.id, req.agent!);
+  const data = updateCustomerSchema.parse(req.body);
+  const updated = await prisma.customer.update({
+    where: { id: BigInt(Number(req.params.id)) },
+    data: {
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.phone !== undefined ? { phone: data.phone } : {}),
+      ...(data.customerType !== undefined ? { customerType: data.customerType } : {}),
+      ...(data.budgetMin !== undefined
+        ? { budgetMin: data.budgetMin == null ? null : BigInt(data.budgetMin) }
+        : {}),
+      ...(data.budgetMax !== undefined
+        ? { budgetMax: data.budgetMax == null ? null : BigInt(data.budgetMax) }
+        : {}),
+      ...(data.desiredArea !== undefined ? { desiredArea: data.desiredArea } : {}),
+      ...(data.memo !== undefined ? { memo: data.memo } : {}),
+    },
+  });
+  res.json(toCustomerResponse(updated));
+});
+
+customersRouter.delete('/:id', async (req, res) => {
+  await findOwnCustomerOrThrow(req.params.id, req.agent!);
+  await prisma.customer.delete({ where: { id: BigInt(Number(req.params.id)) } });
+  res.status(204).send();
 });

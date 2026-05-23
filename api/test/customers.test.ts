@@ -109,3 +109,37 @@ describe('GET /api/customers/:id', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('PATCH /api/customers/:id', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('고객을 수정한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/customers').send(sampleCustomer);
+    const res = await agent
+      .patch(`/api/customers/${created.body.id}`)
+      .send({ memo: '연락 완료', budgetMax: 2000000000 });
+    expect(res.status).toBe(200);
+    expect(res.body.memo).toBe('연락 완료');
+    expect(res.body.budgetMax).toBe(2000000000);
+  });
+});
+
+describe('DELETE /api/customers/:id', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('고객을 삭제하고 204', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/customers').send(sampleCustomer);
+    const del = await agent.delete(`/api/customers/${created.body.id}`);
+    expect(del.status).toBe(204);
+    const after = await agent.get(`/api/customers/${created.body.id}`);
+    expect(after.status).toBe(404);
+  });
+});
