@@ -216,3 +216,43 @@ describe('GET/POST /api/customers/:id/listings', () => {
     expect(res.body[0].listing.dealType).toBe('sale');
   });
 });
+
+describe('PATCH/DELETE /api/customers/:id/listings/:matchId', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('매칭 상태·메모를 수정한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const customer = await agent.post('/api/customers').send(sampleCustomer);
+    const listing = await agent.post('/api/listings').send(sampleListing);
+    const match = await agent
+      .post(`/api/customers/${customer.body.id}/listings`)
+      .send({ listingId: listing.body.id });
+
+    const res = await agent
+      .patch(`/api/customers/${customer.body.id}/listings/${match.body.id}`)
+      .send({ status: 'visited', memo: '임장 완료' });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('visited');
+    expect(res.body.memo).toBe('임장 완료');
+  });
+
+  it('매칭을 삭제하고 204', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const customer = await agent.post('/api/customers').send(sampleCustomer);
+    const listing = await agent.post('/api/listings').send(sampleListing);
+    const match = await agent
+      .post(`/api/customers/${customer.body.id}/listings`)
+      .send({ listingId: listing.body.id });
+
+    const del = await agent.delete(
+      `/api/customers/${customer.body.id}/listings/${match.body.id}`,
+    );
+    expect(del.status).toBe(204);
+    const list = await agent.get(`/api/customers/${customer.body.id}/listings`);
+    expect(list.body).toHaveLength(0);
+  });
+});

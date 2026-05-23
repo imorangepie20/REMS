@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCustomerSchema, updateCustomerSchema, customerFilterSchema, createMatchSchema } from '@rems/shared';
+import { createCustomerSchema, updateCustomerSchema, customerFilterSchema, createMatchSchema, updateMatchSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
 import { ConflictError, NotFoundError } from '../errors';
@@ -209,4 +209,40 @@ customersRouter.post('/:id/listings', async (req, res) => {
     }
     throw err;
   }
+});
+
+async function findOwnMatchOrThrow(
+  customerIdParam: string,
+  matchIdParam: string,
+  agent: AuthenticatedAgent,
+) {
+  const customer = await findOwnCustomerOrThrow(customerIdParam, agent);
+  const matchId = Number(matchIdParam);
+  if (!Number.isInteger(matchId) || matchId <= 0) {
+    throw new NotFoundError('매칭을 찾을 수 없습니다');
+  }
+  const match = await prisma.customerListing.findFirst({
+    where: { id: BigInt(matchId), customerId: customer.id },
+  });
+  if (!match) throw new NotFoundError('매칭을 찾을 수 없습니다');
+  return match;
+}
+
+customersRouter.patch('/:id/listings/:matchId', async (req, res) => {
+  const match = await findOwnMatchOrThrow(req.params.id, req.params.matchId, req.agent!);
+  const data = updateMatchSchema.parse(req.body);
+  const updated = await prisma.customerListing.update({
+    where: { id: match.id },
+    data: {
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.memo !== undefined ? { memo: data.memo } : {}),
+    },
+  });
+  res.json(toMatchResponse(updated));
+});
+
+customersRouter.delete('/:id/listings/:matchId', async (req, res) => {
+  const match = await findOwnMatchOrThrow(req.params.id, req.params.matchId, req.agent!);
+  await prisma.customerListing.delete({ where: { id: match.id } });
+  res.status(204).send();
 });
