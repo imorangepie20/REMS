@@ -137,3 +137,52 @@ describe('POST /api/auth/logout', () => {
     expect((await agent.get('/api/auth/me')).status).toBe(401);
   });
 });
+
+describe('PATCH /api/auth/password', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('현재 비밀번호로 새 비밀번호로 변경한다', async () => {
+    const app = createApp();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/signup').send({
+      agency: { name: 'A부동산' },
+      owner: { email: 'pw@example.com', password: 'oldpass123', name: '테스터' },
+    });
+    const res = await agent
+      .patch('/api/auth/password')
+      .send({ currentPassword: 'oldpass123', newPassword: 'newpass456' });
+    expect(res.status).toBe(204);
+
+    const newAgent = request.agent(app);
+    const login = await newAgent.post('/api/auth/login').send({ email: 'pw@example.com', password: 'newpass456' });
+    expect(login.status).toBe(200);
+  });
+
+  it('현재 비번이 틀리면 401', async () => {
+    const app = createApp();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/signup').send({
+      agency: { name: 'A부동산' },
+      owner: { email: 'pw@example.com', password: 'oldpass123', name: '테스터' },
+    });
+    const res = await agent
+      .patch('/api/auth/password')
+      .send({ currentPassword: 'WRONG', newPassword: 'newpass456' });
+    expect(res.status).toBe(401);
+  });
+
+  it('새 비번이 8자 미만이면 400', async () => {
+    const app = createApp();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/signup').send({
+      agency: { name: 'A부동산' },
+      owner: { email: 'pw@example.com', password: 'oldpass123', name: '테스터' },
+    });
+    const res = await agent
+      .patch('/api/auth/password')
+      .send({ currentPassword: 'oldpass123', newPassword: 'short' });
+    expect(res.status).toBe(400);
+  });
+});
