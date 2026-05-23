@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { createCustomerSchema, updateCustomerSchema, customerFilterSchema } from '@rems/shared';
+import { createCustomerSchema, updateCustomerSchema, customerFilterSchema, createMatchSchema } from '@rems/shared';
 import { prisma } from '../db';
 import { requireAuth } from '../auth/middleware';
-import { NotFoundError } from '../errors';
+import { ConflictError, NotFoundError } from '../errors';
 import type { AuthenticatedAgent } from '../auth/session';
 
 export const customersRouter = Router();
@@ -127,4 +127,86 @@ customersRouter.delete('/:id', async (req, res) => {
   await findOwnCustomerOrThrow(req.params.id, req.agent!);
   await prisma.customer.delete({ where: { id: BigInt(Number(req.params.id)) } });
   res.status(204).send();
+});
+
+interface ListingSummaryRow {
+  id: bigint;
+  title: string;
+  address: string;
+  dealType: 'sale' | 'jeonse' | 'wolse';
+  status: 'active' | 'completed' | 'hidden';
+}
+
+function toMatchResponse(
+  row: Awaited<ReturnType<typeof prisma.customerListing.findFirstOrThrow>>,
+  listing?: ListingSummaryRow,
+) {
+  return {
+    id: row.id,
+    customerId: row.customerId,
+    listingId: row.listingId,
+    status: row.status,
+    memo: row.memo,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    ...(listing
+      ? {
+          listing: {
+            id: listing.id,
+            title: listing.title,
+            address: listing.address,
+            dealType: listing.dealType,
+            status: listing.status,
+          },
+        }
+      : {}),
+  };
+}
+
+customersRouter.get('/:id/listings', async (req, res) => {
+  const customer = await findOwnCustomerOrThrow(req.params.id, req.agent!);
+  const matches = await prisma.customerListing.findMany({
+    where: { customerId: customer.id },
+    include: {
+      listing: {
+        select: { id: true, title: true, address: true, dealType: true, status: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json(matches.map((m) => toMatchResponse(m, m.listing)));
+});
+
+customersRouter.post('/:id/listings', async (req, res) => {
+  const customer = await findOwnCustomerOrThrow(req.params.id, req.agent!);
+  const { listingId, status, memo } = createMatchSchema.parse(req.body);
+
+  // 같은 사무소 매물인지 확인
+  const listing = await prisma.listing.findFirst({
+    where: { id: BigInt(listingId), agencyId: req.agent!.agencyId },
+    select: { id: true, title: true, address: true, dealType: true, status: true },
+  });
+  if (!listing) throw new NotFoundError('매물을 찾을 수 없습니다');
+
+  try {
+    const match = await prisma.customerListing.create({
+      data: {
+        customerId: customer.id,
+        listingId: listing.id,
+        status: status ?? 'suggested',
+        memo,
+      },
+    });
+    res.status(201).json(toMatchResponse(match, listing));
+  } catch (err: unknown) {
+    if (
+      err != null &&
+      typeof err === 'object' &&
+      'code' in err &&
+      (err as { code?: string }).code === 'P2002'
+    ) {
+      throw new ConflictError('이미 매칭된 매물입니다');
+    }
+    throw err;
+  }
 });

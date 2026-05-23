@@ -143,3 +143,76 @@ describe('DELETE /api/customers/:id', () => {
     expect(after.status).toBe(404);
   });
 });
+
+const sampleListing = {
+  title: '강남 아파트',
+  dealType: 'sale',
+  propertyType: 'apartment',
+  salePrice: 1200000000,
+  areaM2: 84,
+  address: '서울 강남구',
+};
+
+describe('GET/POST /api/customers/:id/listings', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('매칭 추가하면 201 + 매물 요약 포함', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const customer = await agent.post('/api/customers').send(sampleCustomer);
+    const listing = await agent.post('/api/listings').send(sampleListing);
+
+    const res = await agent
+      .post(`/api/customers/${customer.body.id}/listings`)
+      .send({ listingId: listing.body.id, memo: '관심 표시' });
+    expect(res.status).toBe(201);
+    expect(res.body.listingId).toBe(listing.body.id);
+    expect(res.body.status).toBe('suggested');
+    expect(res.body.memo).toBe('관심 표시');
+  });
+
+  it('같은 매물을 중복 매칭하면 409', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const customer = await agent.post('/api/customers').send(sampleCustomer);
+    const listing = await agent.post('/api/listings').send(sampleListing);
+    await agent
+      .post(`/api/customers/${customer.body.id}/listings`)
+      .send({ listingId: listing.body.id });
+    const dup = await agent
+      .post(`/api/customers/${customer.body.id}/listings`)
+      .send({ listingId: listing.body.id });
+    expect(dup.status).toBe(409);
+  });
+
+  it('타 사무소 매물로 매칭하면 404', async () => {
+    const app = createApp();
+    const agentA = await signupAgent(app, { agencyName: 'A', email: 'a@example.com' });
+    const customer = await agentA.post('/api/customers').send(sampleCustomer);
+    const agentB = await signupAgent(app, { agencyName: 'B', email: 'b@example.com' });
+    const bListing = await agentB.post('/api/listings').send(sampleListing);
+
+    const res = await agentA
+      .post(`/api/customers/${customer.body.id}/listings`)
+      .send({ listingId: bListing.body.id });
+    expect(res.status).toBe(404);
+  });
+
+  it('매칭 목록은 매물 요약을 포함한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const customer = await agent.post('/api/customers').send(sampleCustomer);
+    const listing = await agent.post('/api/listings').send(sampleListing);
+    await agent
+      .post(`/api/customers/${customer.body.id}/listings`)
+      .send({ listingId: listing.body.id });
+
+    const res = await agent.get(`/api/customers/${customer.body.id}/listings`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].listing.title).toBe('강남 아파트');
+    expect(res.body[0].listing.dealType).toBe('sale');
+  });
+});
