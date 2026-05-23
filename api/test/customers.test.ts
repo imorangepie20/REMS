@@ -2,7 +2,7 @@ import '../src/bigint-json';
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createApp } from '../src/app';
-import { resetDb, signupAgent } from './helpers';
+import { resetDb, signupAgent, addMember } from './helpers';
 
 const sampleCustomer = {
   name: '김매수',
@@ -44,5 +44,68 @@ describe('POST /api/customers', () => {
     const res = await agent.post('/api/customers').send({ phone: '010-0000-0000' });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION');
+  });
+});
+
+describe('GET /api/customers', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('member는 본인 고객만 본다', async () => {
+    const app = createApp();
+    // owner 가입 → 고객 1명
+    const owner = await signupAgent(app, { agencyName: 'A부동산', email: 'owner@example.com' });
+    await owner.post('/api/customers').send(sampleCustomer);
+    // owner가 member 추가 (직접 DB — /api/agents는 Plan 5)
+    const me = await owner.get('/api/auth/me');
+    await addMember(BigInt(me.body.agent.agencyId), 'm@example.com', '멤버');
+    // member 로그인
+    const member = request.agent(app);
+    await member.post('/api/auth/login').send({ email: 'm@example.com', password: 'password123' });
+    // member 자신의 고객 1명
+    await member.post('/api/customers').send({ ...sampleCustomer, name: '멤버의 고객' });
+
+    const memberList = await member.get('/api/customers');
+    expect(memberList.body.total).toBe(1);
+    expect(memberList.body.data[0].name).toBe('멤버의 고객');
+
+    const ownerList = await owner.get('/api/customers');
+    expect(ownerList.body.total).toBe(2); // owner는 사무소 전체
+  });
+
+  it('customerType 필터가 동작한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    await agent.post('/api/customers').send(sampleCustomer); // buyer
+    await agent.post('/api/customers').send({ name: '박매도', customerType: 'seller' });
+
+    const res = await agent.get('/api/customers?customerType=seller');
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.data[0].name).toBe('박매도');
+  });
+});
+
+describe('GET /api/customers/:id', () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it('고객 상세를 반환한다', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const created = await agent.post('/api/customers').send(sampleCustomer);
+    const res = await agent.get(`/api/customers/${created.body.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(created.body.id);
+    expect(res.body.name).toBe('김매수');
+  });
+
+  it('없는 고객이면 404', async () => {
+    const app = createApp();
+    const agent = await signupAgent(app);
+    const res = await agent.get('/api/customers/999999');
+    expect(res.status).toBe(404);
   });
 });

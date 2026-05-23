@@ -1,5 +1,6 @@
 import request from 'supertest';
 import type { Express } from 'express';
+import bcrypt from 'bcrypt';
 import { prisma } from '../src/db';
 
 /** 테스트 사이에 모든 테넌트 테이블을 비운다. FK 의존성 역순으로 삭제. */
@@ -31,4 +32,22 @@ export async function signupAgent(
     throw new Error(`signupAgent 실패: ${res.status} ${JSON.stringify(res.body)}`);
   }
   return agent;
+}
+
+/** Plan 5의 POST /api/agents 라우트 전까지 멤버 계정은 직접 DB로 생성 (테스트 전용) */
+export async function addMember(
+  agencyId: bigint,
+  email: string,
+  name: string,
+  password = 'password123',
+): Promise<void> {
+  await prisma.agent.create({
+    data: {
+      agencyId,
+      email,
+      passwordHash: await bcrypt.hash(password, 10),
+      name,
+      role: 'member',
+    },
+  });
 }
