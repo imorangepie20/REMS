@@ -1,11 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { Building, MapPin, Ruler, FileText, ImagePlus, ArrowLeft } from 'lucide-react'
+import Button from '../../components/common/Button'
 import { getListing, createListing, updateListing, uploadListingPhoto } from '../../api/listings'
 import type { CreateListingRequest } from '@rems/shared'
 
 const inputCls =
-  'w-full px-3 py-2 border border-slate-300 rounded bg-white text-slate-900 placeholder:text-slate-400'
+  'w-full px-3 py-2 bg-hud-bg-secondary border border-hud-border-secondary rounded-lg text-sm text-hud-text-primary placeholder-hud-text-muted focus:outline-none focus:border-hud-accent-primary transition-hud'
+const iconInputCls =
+  'w-full pl-10 pr-3 py-2 bg-hud-bg-secondary border border-hud-border-secondary rounded-lg text-sm text-hud-text-primary placeholder-hud-text-muted focus:outline-none focus:border-hud-accent-primary transition-hud'
 
 type FormState = {
   title: string
@@ -21,16 +25,9 @@ type FormState = {
 }
 
 const empty: FormState = {
-  title: '',
-  dealType: 'sale',
-  propertyType: 'apartment',
-  salePrice: '',
-  deposit: '',
-  monthlyRent: '',
-  areaM2: '',
-  address: '',
-  description: '',
-  status: 'active',
+  title: '', dealType: 'sale', propertyType: 'apartment',
+  salePrice: '', deposit: '', monthlyRent: '',
+  areaM2: '', address: '', description: '', status: 'active',
 }
 
 function toNumber(s: string): number | undefined {
@@ -110,61 +107,128 @@ export default function ListingForm() {
   }
 
   return (
-    <div className="p-6 text-slate-900">
-      <h1 className="text-2xl font-semibold mb-4">{isEdit ? '매물 수정' : '매물 등록'}</h1>
-      <form onSubmit={onSubmit} className="max-w-lg space-y-3">
-        <input className={inputCls} placeholder="매물명" required value={form.title}
-          onChange={(e) => set('title', e.target.value)} />
-        <select className={inputCls} value={form.dealType}
-          onChange={(e) => set('dealType', e.target.value)}>
-          <option value="sale">매매</option>
-          <option value="jeonse">전세</option>
-          <option value="wolse">월세</option>
-        </select>
-        <select className={inputCls} value={form.propertyType}
-          onChange={(e) => set('propertyType', e.target.value)}>
-          <option value="apartment">아파트</option>
-          <option value="officetel">오피스텔</option>
-          <option value="house">주택</option>
-          <option value="commercial">상가</option>
-          <option value="land">토지</option>
-        </select>
-        {form.dealType === 'sale' && (
-          <input className={inputCls} type="number" placeholder="매매가 (원)" value={form.salePrice}
-            onChange={(e) => set('salePrice', e.target.value)} />
-        )}
-        {(form.dealType === 'jeonse' || form.dealType === 'wolse') && (
-          <input className={inputCls} type="number" placeholder="보증금 (원)" value={form.deposit}
-            onChange={(e) => set('deposit', e.target.value)} />
-        )}
-        {form.dealType === 'wolse' && (
-          <input className={inputCls} type="number" placeholder="월세액 (원)" value={form.monthlyRent}
-            onChange={(e) => set('monthlyRent', e.target.value)} />
-        )}
-        <input className={inputCls} type="number" step="0.01" placeholder="전용면적 (㎡)" required
-          value={form.areaM2} onChange={(e) => set('areaM2', e.target.value)} />
-        <input className={inputCls} placeholder="주소" required value={form.address}
-          onChange={(e) => set('address', e.target.value)} />
-        <textarea className={inputCls} placeholder="설명" rows={4} value={form.description}
-          onChange={(e) => set('description', e.target.value)} />
+    <div className="p-6 text-hud-text-primary max-w-3xl">
+      <div className="flex items-center gap-3 mb-6">
+        <Link to="/listings" className="text-hud-text-muted hover:text-hud-text-primary">
+          <ArrowLeft size={20} />
+        </Link>
+        <Building size={24} className="text-hud-accent-primary" />
+        <h1 className="text-2xl font-bold">{isEdit ? '매물 수정' : '매물 등록'}</h1>
+      </div>
+
+      <form onSubmit={onSubmit} className="hud-card rounded-lg p-6 space-y-5">
+        <div>
+          <label className="block text-xs text-hud-text-muted mb-1">매물명 *</label>
+          <input required className={inputCls} placeholder="예: 강남 아파트 30평"
+            value={form.title} onChange={(e) => set('title', e.target.value)} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-hud-text-muted mb-1">거래유형</label>
+            <select className={inputCls} value={form.dealType}
+              onChange={(e) => set('dealType', e.target.value)}>
+              <option value="sale">매매</option>
+              <option value="jeonse">전세</option>
+              <option value="wolse">월세</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-hud-text-muted mb-1">매물 종류</label>
+            <select className={inputCls} value={form.propertyType}
+              onChange={(e) => set('propertyType', e.target.value)}>
+              <option value="apartment">아파트</option>
+              <option value="officetel">오피스텔</option>
+              <option value="house">주택</option>
+              <option value="commercial">상가</option>
+              <option value="land">토지</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {form.dealType === 'sale' && (
+            <div>
+              <label className="block text-xs text-hud-text-muted mb-1">매매가 (원)</label>
+              <input type="number" className={inputCls} placeholder="150000000"
+                value={form.salePrice} onChange={(e) => set('salePrice', e.target.value)} />
+            </div>
+          )}
+          {(form.dealType === 'jeonse' || form.dealType === 'wolse') && (
+            <div>
+              <label className="block text-xs text-hud-text-muted mb-1">보증금 (원)</label>
+              <input type="number" className={inputCls} placeholder="50000000"
+                value={form.deposit} onChange={(e) => set('deposit', e.target.value)} />
+            </div>
+          )}
+          {form.dealType === 'wolse' && (
+            <div>
+              <label className="block text-xs text-hud-text-muted mb-1">월세액 (원)</label>
+              <input type="number" className={inputCls} placeholder="1000000"
+                value={form.monthlyRent} onChange={(e) => set('monthlyRent', e.target.value)} />
+            </div>
+          )}
+          <div>
+            <label className="block text-xs text-hud-text-muted mb-1">전용면적 (㎡) *</label>
+            <div className="relative">
+              <Ruler size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-hud-text-muted" />
+              <input required type="number" step="0.01" className={iconInputCls} placeholder="99"
+                value={form.areaM2} onChange={(e) => set('areaM2', e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs text-hud-text-muted mb-1">주소 *</label>
+          <div className="relative">
+            <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-hud-text-muted" />
+            <input required className={iconInputCls} placeholder="서울특별시 강남구 ..."
+              value={form.address} onChange={(e) => set('address', e.target.value)} />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs text-hud-text-muted mb-1">설명</label>
+          <div className="relative">
+            <FileText size={16} className="absolute left-3 top-3 text-hud-text-muted" />
+            <textarea className="w-full pl-10 pr-3 py-2 bg-hud-bg-secondary border border-hud-border-secondary rounded-lg text-sm text-hud-text-primary placeholder-hud-text-muted focus:outline-none focus:border-hud-accent-primary transition-hud"
+              rows={4} placeholder="매물 특징, 옵션 등"
+              value={form.description} onChange={(e) => set('description', e.target.value)} />
+          </div>
+        </div>
+
         {isEdit && (
-          <label className="block text-sm text-slate-700">
-            거래 상태
+          <div>
+            <label className="block text-xs text-hud-text-muted mb-1">거래 상태</label>
             <select className={inputCls} value={form.status}
               onChange={(e) => set('status', e.target.value)}>
               <option value="active">거래중</option>
               <option value="completed">거래완료</option>
               <option value="hidden">숨김</option>
             </select>
-          </label>
+          </div>
         )}
-        <input type="file" accept="image/*"
-          onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)} />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button type="submit" disabled={save.isPending}
-          className="w-full py-2 bg-blue-600 text-white rounded disabled:opacity-50">
-          {save.isPending ? '저장 중...' : '저장'}
-        </button>
+
+        <div>
+          <label className="block text-xs text-hud-text-muted mb-2">사진</label>
+          <label className="flex items-center gap-2 px-3 py-2 bg-hud-bg-secondary border border-dashed border-hud-border-secondary rounded-lg cursor-pointer hover:border-hud-accent-primary transition-hud text-sm text-hud-text-secondary">
+            <ImagePlus size={18} />
+            <span>{photoFile ? photoFile.name : '이미지 선택 (jpg, png, webp · 최대 5MB)'}</span>
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)} />
+          </label>
+        </div>
+
+        {error && <p className="text-sm text-hud-accent-danger">{error}</p>}
+
+        <div className="flex gap-2">
+          <Button variant="primary" type="submit" disabled={save.isPending} fullWidth glow>
+            {save.isPending ? '저장 중...' : '저장'}
+          </Button>
+          <Link to="/listings">
+            <Button variant="ghost" type="button">취소</Button>
+          </Link>
+        </div>
       </form>
     </div>
   )

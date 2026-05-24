@@ -83,7 +83,7 @@ export function KakaoMap({
   if (!KEY) {
     return (
       <div className={className ?? 'w-full h-96'}>
-        <div className="flex h-full items-center justify-center bg-slate-100 text-slate-500 text-sm">
+        <div className="flex h-full items-center justify-center bg-hud-bg-secondary text-hud-text-muted text-sm">
           카카오맵 키(VITE_KAKAO_MAP_KEY)가 설정되지 않았습니다
         </div>
       </div>
