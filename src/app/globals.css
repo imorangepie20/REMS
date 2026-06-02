@@ -1,67 +1,117 @@
 @import "tailwindcss";
 
-/* HUD 다크 테마 디자인 토큰 — Tailwind v4 @theme로 등록 */
-@theme {
-  /* 배경 */
-  --color-hud-bg-primary: #0a0e1a;
-  --color-hud-bg-secondary: #111827;
-  --color-hud-bg-card: #1f2937;
-  --color-hud-bg-hover: #1e293b;
+/*
+ * 테마 토큰 — 런타임 스위칭을 위해 @theme inline은 CSS 변수만 참조.
+ * data-theme 속성으로 :root에서 변수를 재정의하면 모든 hud-* 유틸 클래스가 동적으로 반영된다.
+ */
 
-  /* 텍스트 */
-  --color-hud-text-primary: #f1f5f9;
-  --color-hud-text-secondary: #cbd5e1;
-  --color-hud-text-muted: #64748b;
+/* 기본 테마 (HUD 다크) */
+:root, :root[data-theme="hud"] {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: #1f2937;
+  --bg-hover: #1e293b;
 
-  /* 보더 */
-  --color-hud-border-primary: #1e293b;
-  --color-hud-border-secondary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
 
-  /* 액센트 */
-  --color-hud-accent-primary: #06b6d4;
-  --color-hud-accent-secondary: #a78bfa;
-  --color-hud-accent-info: #3b82f6;
-  --color-hud-accent-warning: #f59e0b;
-  --color-hud-accent-success: #10b981;
-  --color-hud-accent-danger: #ef4444;
-  --color-hud-on-accent: #0a0e1a;
+  --border-primary: #1e293b;
+  --border-secondary: #334155;
 
-  /* 폰트 */
+  --accent-primary: #06b6d4;
+  --accent-secondary: #a78bfa;
+  --accent-info: #3b82f6;
+  --accent-warning: #f59e0b;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --on-accent: #0a0e1a;
+
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(6, 182, 212, 0.4);
+}
+
+/* 라이트 테마 — 회색 배경 + 검정 글씨 */
+:root[data-theme="light"] {
+  --bg-primary: #e5e7eb;
+  --bg-secondary: #f3f4f6;
+  --bg-card: #ffffff;
+  --bg-hover: #d1d5db;
+
+  --text-primary: #000000;
+  --text-secondary: #1f2937;
+  --text-muted: #6b7280;
+
+  --border-primary: #d1d5db;
+  --border-secondary: #9ca3af;
+
+  --accent-primary: #0891b2;
+  --accent-secondary: #7c3aed;
+  --accent-info: #2563eb;
+  --accent-warning: #d97706;
+  --accent-success: #059669;
+  --accent-danger: #dc2626;
+  --on-accent: #ffffff;
+
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 16px rgba(8, 145, 178, 0.3);
+}
+
+/* Tailwind v4 유틸 토큰 — CSS 변수 인다이렉션 */
+@theme inline {
+  --color-hud-bg-primary: var(--bg-primary);
+  --color-hud-bg-secondary: var(--bg-secondary);
+  --color-hud-bg-card: var(--bg-card);
+  --color-hud-bg-hover: var(--bg-hover);
+
+  --color-hud-text-primary: var(--text-primary);
+  --color-hud-text-secondary: var(--text-secondary);
+  --color-hud-text-muted: var(--text-muted);
+
+  --color-hud-border-primary: var(--border-primary);
+  --color-hud-border-secondary: var(--border-secondary);
+
+  --color-hud-accent-primary: var(--accent-primary);
+  --color-hud-accent-secondary: var(--accent-secondary);
+  --color-hud-accent-info: var(--accent-info);
+  --color-hud-accent-warning: var(--accent-warning);
+  --color-hud-accent-success: var(--accent-success);
+  --color-hud-accent-danger: var(--accent-danger);
+  --color-hud-on-accent: var(--on-accent);
+
   --font-sans: Inter, Roboto, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
-  /* 그림자 */
-  --shadow-hud: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-hud-glow: 0 0 20px rgba(6,182,212,0.4);
+  --shadow-hud: var(--shadow-card);
+  --shadow-hud-glow: var(--shadow-glow);
 
-  /* 애니메이션 */
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
   --animate-fade-in: fadeIn 0.3s ease-out;
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(6,182,212,0.3); }
-  50% { box-shadow: 0 0 40px rgba(6,182,212,0.5); }
+  0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.5); }
 }
 @keyframes fadeIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
 
-/* 기본 body — HUD 다크 */
+/* 기본 body */
 body {
-  background-color: var(--color-hud-bg-primary);
-  color: var(--color-hud-text-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-family: var(--font-sans);
 }
 
-/* HUD 카드 컴포넌트 클래스 (REMS 차용) */
+/* HUD 카드 컴포넌트 클래스 */
 .hud-card {
-  background-color: var(--color-hud-bg-card);
-  border: 1px solid var(--color-hud-border-secondary);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-secondary);
 }
 .hud-card-bottom {
-  border-bottom: 2px solid var(--color-hud-accent-primary);
+  border-bottom: 2px solid var(--accent-primary);
 }
 
 /* 트랜지션 */
@@ -71,5 +121,5 @@ body {
 
 /* 버튼 글로우 */
 .btn-glow {
-  box-shadow: var(--shadow-hud-glow);
+  box-shadow: var(--shadow-glow);
 }

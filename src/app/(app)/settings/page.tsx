@@ -6,6 +6,7 @@ import AgencySection from '@/components/settings/AgencySection'
 import AccountSection from '@/components/settings/AccountSection'
 import PasswordSection from '@/components/settings/PasswordSection'
 import AgentsSection from '@/components/settings/AgentsSection'
+import AppearanceSection from '@/components/settings/AppearanceSection'
 
 const SECTIONS = [
   { key: 'agency', label: '사무소 정보', icon: Building2 },
@@ -48,7 +49,7 @@ export default function SettingsPage() {
         {current === 'account' && <AccountSection />}
         {current === 'password' && <PasswordSection />}
         {current === 'agents' && <AgentsSection />}
-        {current === 'appearance' && <p className="text-hud-text-muted">외관 설정은 후속 작업에서 추가됩니다.</p>}
+        {current === 'appearance' && <AppearanceSection />}
       </div>
     </div>
   )
