@@ -7,9 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 모델은 Phase 2 (Auth & Multi-tenancy)에서 정의한다.
-// Phase 1은 datasource 연결과 generate 동작 검증까지.
-// Prisma 5는 model이 0개면 generate가 실패하므로, Phase 2에서 제거할 placeholder를 둔다.
-model PhaseOnePlaceholder {
-  id Int @id @default(autoincrement())
+enum Role {
+  owner
+  member
+}
+
+enum AgentStatus {
+  active
+  suspended
+}
+
+model Agency {
+  id             Int      @id @default(autoincrement())
+  name           String
+  businessNumber String?
+  phone          String?
+  address        String?
+  agents         Agent[]
+  createdAt      DateTime @default(now())
+}
+
+model Agent {
+  id           Int         @id @default(autoincrement())
+  agencyId     Int
+  agency       Agency      @relation(fields: [agencyId], references: [id])
+  email        String      @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         Role        @default(member)
+  status       AgentStatus @default(active)
+  sessions     Session[]
+  createdAt    DateTime    @default(now())
+
+  @@index([agencyId])
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  agentId   Int
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([agentId])
 }
