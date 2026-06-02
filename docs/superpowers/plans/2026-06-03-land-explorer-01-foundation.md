@@ -4,9 +4,9 @@
 
 **Goal:** REMS v1 코드를 폐기하고 Land Explorer 새 프로젝트의 기반(Next.js + Postgres + Prisma + Tailwind/HUD 테마)을 구축한다. 인증·도메인 모델·페이지는 Phase 2 이후에서 다룬다.
 
-**Architecture:** Next.js 15 App Router 단일 코드베이스. PostgreSQL 16 docker-compose. Prisma 5 ORM (Phase 1은 datasource·generator만, 모델은 Phase 2). Tailwind v3 + REMS의 HUD 테마(CSS 변수 + Tailwind 확장) 그대로 차용. 재활용 자산: `KakaoMap.tsx`, HUD 토큰 CSS, Tailwind 확장.
+**Architecture:** Next.js 15 App Router 단일 코드베이스. PostgreSQL 16 docker-compose. Prisma 5 ORM (Phase 1은 datasource·generator만, 모델은 Phase 2). Tailwind v4 (config-less, @theme directive) + REMS의 HUD 테마 차용. 재활용 자산: `KakaoMap.tsx`, HUD 토큰.
 
-**Tech Stack:** Next.js 15, TypeScript 5, Node 20 LTS, PostgreSQL 16, Prisma 5, Tailwind CSS 3.4, Vitest 1.x, Docker Compose v2
+**Tech Stack:** Next.js 15, TypeScript 5, Node 20+ (테스트는 v26에서도 동작), PostgreSQL 16, Prisma 5, Tailwind CSS 4, Vitest 1.x, Docker Compose v2
 
 **Working directory:** `/Volumes/MacExtend 1/REMS` (현재 repo 루트, REMS v1을 신규 프로젝트로 대체)
 
