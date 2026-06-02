@@ -25,14 +25,9 @@ export default function AgencySection() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    apiFetch<{ agency: { id: number; name: string } }>('/auth/me')
-      .then(async () => {
-        // /me는 간단 필드만 — 전체는 별도 GET이 없으므로 PATCH 후 응답으로 보강
-        // 초기값은 me.agency.name부터 채우고 나머지는 빈 값
-        const agency = me?.agency
-        if (agency) setForm((f) => ({ ...f, name: agency.name }))
-      })
-      .finally(() => setLoading(false))
+    // /me는 간단 필드만 — businessNumber/phone/address는 첫 PATCH 응답으로 채워짐
+    if (me?.agency) setForm((f) => ({ ...f, name: me.agency!.name }))
+    setLoading(false)
   }, [me])
 
   const onSubmit = async (e: FormEvent) => {
