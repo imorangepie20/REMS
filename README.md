@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Land Explorer
 
-## Getting Started
+네이버 부동산 인터랙티브 탐색 + 사무소 내부 매물 관리.
 
-First, run the development server:
+## 기술 스택
+
+- Next.js 15 (App Router) + TypeScript
+- PostgreSQL 16 + Prisma 5
+- Tailwind CSS 4 + HUD 테마
+- Vitest
+
+## 개발 환경 설정
 
 ```bash
+# 1. DB 컨테이너 기동
+docker compose up -d
+
+# 2. 의존성 설치
+npm install
+
+# 3. .env 확인 (없으면 .env.example 복사)
+cp .env.example .env
+
+# 4. Prisma 동기화
+npx prisma db push
+
+# 5. dev 서버
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 스크립트
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| 명령 | 동작 |
+|---|---|
+| `npm run dev` | 개발 서버 (포트 3000) |
+| `npm run build` | 프로덕션 빌드 |
+| `npm run start` | 프로덕션 서버 |
+| `npm test` | Vitest |
+| `npm run test:watch` | Vitest watch 모드 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 디자인 문서
 
-## Learn More
+- 전체 설계: [docs/superpowers/specs/2026-06-03-land-explorer-design.md](docs/superpowers/specs/2026-06-03-land-explorer-design.md)
+- Phase 1 플랜: [docs/superpowers/plans/2026-06-03-land-explorer-01-foundation.md](docs/superpowers/plans/2026-06-03-land-explorer-01-foundation.md)
 
-To learn more about Next.js, take a look at the following resources:
+## 이전 버전
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+REMS v1은 폐기되었으나 history는 보존되어 있다:
+- Git tag: `rems-v1-final`
+- Git branch: `legacy/rems-v1`
