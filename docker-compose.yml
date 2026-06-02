@@ -1,22 +1,21 @@
 services:
   db:
-    image: mariadb:11.4
-    container_name: rems-mariadb
+    image: postgres:16
+    container_name: land-explorer-db
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_DATABASE: rems
-      MARIADB_USER: rems
-      MARIADB_PASSWORD: rems
+      POSTGRES_DB: land_explorer
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - rems-db-data:/var/lib/mysql
+      - land-explorer-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: ["CMD-SHELL", "pg_isready -U app -d land_explorer"]
       interval: 5s
       timeout: 5s
       retries: 30
 
 volumes:
-  rems-db-data:
+  land-explorer-data:

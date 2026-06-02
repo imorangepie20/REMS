@@ -1,23 +1,50 @@
-# REMS
+# Land Explorer
 
-부동산 중개사용 멀티테넌트 매물·고객 관리 SaaS.
+네이버 부동산 인터랙티브 탐색 + 사무소 내부 매물 관리.
 
-## 구조
+## 기술 스택
 
-- `web/` — Vite + React SPA
-- `api/` — Express + Prisma API 서버
-- `packages/shared/` — web·api 공유 zod 스키마·타입
+- Next.js 15 (App Router) + TypeScript
+- PostgreSQL 16 + Prisma 5
+- Tailwind CSS 4 + HUD 테마
+- Vitest
 
-## 개발
+## 개발 환경 설정
 
-사전 준비: Node.js 20+, Docker.
+```bash
+# 1. DB 컨테이너 기동
+docker compose up -d
 
-```
-docker compose up -d              # MariaDB (localhost:3306)
+# 2. 의존성 설치
 npm install
-npm run prisma:migrate -w api     # DB 마이그레이션 (최초 1회 / 스키마 변경 시)
-npm run dev                       # web :5173, api :3000
-npm run test                      # api 테스트
+
+# 3. .env 확인 (없으면 .env.example 복사)
+cp .env.example .env
+
+# 4. Prisma 동기화
+npx prisma db push
+
+# 5. dev 서버
+npm run dev
 ```
 
-설계 문서: `docs/superpowers/specs/2026-05-22-rems-v1-design.md`
+## 스크립트
+
+| 명령 | 동작 |
+|---|---|
+| `npm run dev` | 개발 서버 (포트 3000) |
+| `npm run build` | 프로덕션 빌드 |
+| `npm run start` | 프로덕션 서버 |
+| `npm test` | Vitest |
+| `npm run test:watch` | Vitest watch 모드 |
+
+## 디자인 문서
+
+- 전체 설계: [docs/superpowers/specs/2026-06-03-land-explorer-design.md](docs/superpowers/specs/2026-06-03-land-explorer-design.md)
+- Phase 1 플랜: [docs/superpowers/plans/2026-06-03-land-explorer-01-foundation.md](docs/superpowers/plans/2026-06-03-land-explorer-01-foundation.md)
+
+## 이전 버전
+
+REMS v1은 폐기되었으나 history는 보존되어 있다:
+- Git tag: `rems-v1-final`
+- Git branch: `legacy/rems-v1`

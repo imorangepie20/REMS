@@ -4,9 +4,9 @@
 
 **Goal:** REMS v1 코드를 폐기하고 Land Explorer 새 프로젝트의 기반(Next.js + Postgres + Prisma + Tailwind/HUD 테마)을 구축한다. 인증·도메인 모델·페이지는 Phase 2 이후에서 다룬다.
 
-**Architecture:** Next.js 15 App Router 단일 코드베이스. PostgreSQL 16 docker-compose. Prisma 5 ORM (Phase 1은 datasource·generator만, 모델은 Phase 2). Tailwind v3 + REMS의 HUD 테마(CSS 변수 + Tailwind 확장) 그대로 차용. 재활용 자산: `KakaoMap.tsx`, HUD 토큰 CSS, Tailwind 확장.
+**Architecture:** Next.js 15 App Router 단일 코드베이스. PostgreSQL 16 docker-compose. Prisma 5 ORM (Phase 1은 datasource·generator만, 모델은 Phase 2). Tailwind v4 (config-less, @theme directive) + REMS의 HUD 테마 차용. 재활용 자산: `KakaoMap.tsx`, HUD 토큰.
 
-**Tech Stack:** Next.js 15, TypeScript 5, Node 20 LTS, PostgreSQL 16, Prisma 5, Tailwind CSS 3.4, Vitest 1.x, Docker Compose v2
+**Tech Stack:** Next.js 15, TypeScript 5, Node 20+ (테스트는 v26에서도 동작), PostgreSQL 16, Prisma 5, Tailwind CSS 4, Vitest 1.x, Docker Compose v2
 
 **Working directory:** `/Volumes/MacExtend 1/REMS` (현재 repo 루트, REMS v1을 신규 프로젝트로 대체)
 
@@ -248,146 +248,81 @@ REMS v1을 폐기하고 Land Explorer 신규 베이스로 교체.
 이전 코드는 tag rems-v1-final, branch legacy/rems-v1에 보존."
 ```
 
-### Task 5: HUD 테마 복원 (globals.css + tailwind.config)
+### Task 5: HUD 테마 복원 (Tailwind v4 @theme)
 
 **Files:**
 - Modify: `src/app/globals.css`
-- Modify: `tailwind.config.ts` (Next 스캐폴드가 ts로 만들었을 것; .js로 생성된 경우 .ts로 rename)
 
-- [ ] **Step 1: 현재 tailwind config 파일명 확인**
+> **Tailwind v4 주의**: Task 4가 가져온 Next.js 15 scaffold는 Tailwind v4 (config-less 방식)를 사용한다. 별도 `tailwind.config.ts` 파일 없음. 모든 디자인 토큰은 `globals.css`의 `@theme` 블록에서 등록한다. 토큰 이름 `--color-hud-bg-primary`는 자동으로 `bg-hud-bg-primary` 유틸 클래스로 노출된다.
 
-```bash
-ls tailwind.config.*
-```
-Expected: `tailwind.config.ts` 또는 `tailwind.config.js`
-
-- [ ] **Step 2: tailwind.config.ts로 정규화 (.js인 경우)**
-
-```bash
-# 이미 .ts면 스킵. .js인 경우만:
-[ -f tailwind.config.js ] && mv tailwind.config.js tailwind.config.ts
-```
-
-- [ ] **Step 3: tailwind.config.ts 전체 교체**
-
-`tailwind.config.ts`:
-```typescript
-import type { Config } from 'tailwindcss'
-
-const config: Config = {
-  content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
-  darkMode: 'class',
-  theme: {
-    extend: {
-      colors: {
-        hud: {
-          bg: {
-            primary: 'var(--hud-bg-primary)',
-            secondary: 'var(--hud-bg-secondary)',
-            card: 'var(--hud-bg-card)',
-            hover: 'var(--hud-bg-hover)',
-          },
-          accent: {
-            primary: 'var(--hud-accent-primary)',
-            secondary: 'var(--hud-accent-secondary)',
-            warning: 'var(--hud-accent-warning)',
-            info: 'var(--hud-accent-info)',
-            success: 'var(--hud-accent-success)',
-            danger: 'var(--hud-accent-danger)',
-          },
-          text: {
-            primary: 'var(--hud-text-primary)',
-            secondary: 'var(--hud-text-secondary)',
-            muted: 'var(--hud-text-muted)',
-          },
-          border: {
-            primary: 'var(--hud-border-primary)',
-            secondary: 'var(--hud-border-secondary)',
-          },
-          onAccent: 'var(--hud-on-accent)',
-        },
-      },
-      fontFamily: {
-        sans: ['Inter', 'Roboto', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-      },
-      boxShadow: {
-        hud: 'var(--hud-shadow)',
-        'hud-glow': 'var(--hud-shadow-glow)',
-      },
-      animation: {
-        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-        'fade-in': 'fadeIn 0.3s ease-out',
-      },
-      keyframes: {
-        'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 20px var(--hud-pulse-glow-start)' },
-          '50%': { boxShadow: '0 0 40px var(--hud-pulse-glow-end)' },
-        },
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-      },
-    },
-  },
-  plugins: [],
-}
-
-export default config
-```
-
-- [ ] **Step 4: globals.css 전체 교체 (HUD CSS 변수 포함)**
+- [ ] **Step 1: globals.css 전체 교체**
 
 `src/app/globals.css`:
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  /* HUD 다크 테마 (기본) — REMS v1 토큰 차용 */
-  --hud-bg-primary: #0a0e1a;
-  --hud-bg-secondary: #111827;
-  --hud-bg-card: #1f2937;
-  --hud-bg-hover: #1e293b;
+/* HUD 다크 테마 디자인 토큰 — Tailwind v4 @theme로 등록 */
+@theme {
+  /* 배경 */
+  --color-hud-bg-primary: #0a0e1a;
+  --color-hud-bg-secondary: #111827;
+  --color-hud-bg-card: #1f2937;
+  --color-hud-bg-hover: #1e293b;
 
-  --hud-text-primary: #f1f5f9;
-  --hud-text-secondary: #cbd5e1;
-  --hud-text-muted: #64748b;
+  /* 텍스트 */
+  --color-hud-text-primary: #f1f5f9;
+  --color-hud-text-secondary: #cbd5e1;
+  --color-hud-text-muted: #64748b;
 
-  --hud-border-primary: #1e293b;
-  --hud-border-secondary: #334155;
+  /* 보더 */
+  --color-hud-border-primary: #1e293b;
+  --color-hud-border-secondary: #334155;
 
-  --hud-accent-primary: #06b6d4;
-  --hud-accent-secondary: #a78bfa;
-  --hud-accent-info: #3b82f6;
-  --hud-accent-warning: #f59e0b;
-  --hud-accent-success: #10b981;
-  --hud-accent-danger: #ef4444;
-  --hud-on-accent: #0a0e1a;
+  /* 액센트 */
+  --color-hud-accent-primary: #06b6d4;
+  --color-hud-accent-secondary: #a78bfa;
+  --color-hud-accent-info: #3b82f6;
+  --color-hud-accent-warning: #f59e0b;
+  --color-hud-accent-success: #10b981;
+  --color-hud-accent-danger: #ef4444;
+  --color-hud-on-accent: #0a0e1a;
 
-  --hud-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  --hud-shadow-glow: 0 0 20px rgba(6,182,212,0.4);
-  --hud-pulse-glow-start: rgba(6,182,212,0.3);
-  --hud-pulse-glow-end: rgba(6,182,212,0.5);
+  /* 폰트 */
+  --font-sans: Inter, Roboto, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* 그림자 */
+  --shadow-hud: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-hud-glow: 0 0 20px rgba(6,182,212,0.4);
+
+  /* 애니메이션 */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-fade-in: fadeIn 0.3s ease-out;
 }
 
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(6,182,212,0.3); }
+  50% { box-shadow: 0 0 40px rgba(6,182,212,0.5); }
+}
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* 기본 body — HUD 다크 */
 body {
-  background-color: var(--hud-bg-primary);
-  color: var(--hud-text-primary);
-  font-family: 'Inter', 'Roboto', system-ui, sans-serif;
+  background-color: var(--color-hud-bg-primary);
+  color: var(--color-hud-text-primary);
+  font-family: var(--font-sans);
 }
 
-/* HUD 카드 */
+/* HUD 카드 컴포넌트 클래스 (REMS 차용) */
 .hud-card {
-  background-color: var(--hud-bg-card);
-  border: 1px solid var(--hud-border-secondary);
+  background-color: var(--color-hud-bg-card);
+  border: 1px solid var(--color-hud-border-secondary);
 }
 .hud-card-bottom {
-  border-bottom: 2px solid var(--hud-accent-primary);
+  border-bottom: 2px solid var(--color-hud-accent-primary);
 }
 
 /* 트랜지션 */
@@ -397,23 +332,32 @@ body {
 
 /* 버튼 글로우 */
 .btn-glow {
-  box-shadow: 0 0 16px var(--hud-shadow-glow);
+  box-shadow: var(--shadow-hud-glow);
 }
 ```
 
-- [ ] **Step 5: 빌드 검증**
+> **이름 규칙 확정**: 모든 HUD 토큰은 kebab-case (예: `--color-hud-on-accent` → `text-hud-on-accent`). REMS의 `onAccent` camelCase는 폐기. Phase 2 이후 UI에서 `text-hud-on-accent`로 사용.
+
+- [ ] **Step 2: 빌드 검증**
 
 ```bash
 npm run build
 ```
-Expected: `Compiled successfully`
-
-- [ ] **Step 6: 커밋**
+Expected: `Compiled successfully`. 다크 배경(`#0a0e1a`)이 적용되었는지 확인하려면 dev 서버로:
 
 ```bash
-git add tailwind.config.ts src/app/globals.css
-git rm -f tailwind.config.js 2>/dev/null || true
-git commit -m "feat: HUD 테마 토큰 + tailwind 확장 복원 (REMS v1 차용)"
+npm run dev &
+sleep 4
+curl -s http://localhost:3000/ -o /dev/null -w "HTTP %{http_code}\n"
+kill %1
+```
+Expected: `HTTP 200`. (시각 검증은 사용자 브라우저 단계에서.)
+
+- [ ] **Step 3: 커밋**
+
+```bash
+git add src/app/globals.css
+git commit -m "feat: HUD 테마 토큰 (Tailwind v4 @theme) 복원 — REMS v1 차용"
 ```
 
 ### Task 6: KakaoMap 컴포넌트 복원
@@ -956,7 +900,7 @@ Phase 1 완료. 다음 단계:
 - **Docker compose 명령**: `docker compose` (v2 플러그인). `docker-compose`(v1)는 macOS에서 점차 사라지는 추세 — v2 사용 가정.
 - **포트 충돌**: 3000(Next), 5432(Postgres). 이전 dev 서버가 남아있다면 Task 3에서 종료.
 - **Kakao Map key**: Phase 1은 KakaoMap 컴포넌트 가져오지만 화면에서 사용 안 함 → `NEXT_PUBLIC_KAKAO_MAP_KEY` 미설정 OK. Phase 3 (Naver Explore)에서 필요.
-- **Tailwind v3 vs v4**: v3 (3.4.x) 기준. Next 15 + Tailwind v4 조합은 호환 이슈 가능성 있어 v3 권장.
+- **Tailwind v4**: Task 4의 `create-next-app@15`이 기본으로 Tailwind v4를 가져옴. config-less, `@theme` directive 방식. 별도 `tailwind.config.ts` 파일 없음 — 모든 토큰은 `globals.css` `@theme` 블록에 등록.
 
 ## Out of Scope (Phase 2 이후)
 

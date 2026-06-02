@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* HUD 다크 테마 디자인 토큰 — Tailwind v4 @theme로 등록 */
+@theme {
+  /* 배경 */
+  --color-hud-bg-primary: #0a0e1a;
+  --color-hud-bg-secondary: #111827;
+  --color-hud-bg-card: #1f2937;
+  --color-hud-bg-hover: #1e293b;
+
+  /* 텍스트 */
+  --color-hud-text-primary: #f1f5f9;
+  --color-hud-text-secondary: #cbd5e1;
+  --color-hud-text-muted: #64748b;
+
+  /* 보더 */
+  --color-hud-border-primary: #1e293b;
+  --color-hud-border-secondary: #334155;
+
+  /* 액센트 */
+  --color-hud-accent-primary: #06b6d4;
+  --color-hud-accent-secondary: #a78bfa;
+  --color-hud-accent-info: #3b82f6;
+  --color-hud-accent-warning: #f59e0b;
+  --color-hud-accent-success: #10b981;
+  --color-hud-accent-danger: #ef4444;
+  --color-hud-on-accent: #0a0e1a;
+
+  /* 폰트 */
+  --font-sans: Inter, Roboto, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* 그림자 */
+  --shadow-hud: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-hud-glow: 0 0 20px rgba(6,182,212,0.4);
+
+  /* 애니메이션 */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-fade-in: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(6,182,212,0.3); }
+  50% { box-shadow: 0 0 40px rgba(6,182,212,0.5); }
+}
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* 기본 body — HUD 다크 */
+body {
+  background-color: var(--color-hud-bg-primary);
+  color: var(--color-hud-text-primary);
+  font-family: var(--font-sans);
+}
+
+/* HUD 카드 컴포넌트 클래스 (REMS 차용) */
+.hud-card {
+  background-color: var(--color-hud-bg-card);
+  border: 1px solid var(--color-hud-border-secondary);
+}
+.hud-card-bottom {
+  border-bottom: 2px solid var(--color-hud-accent-primary);
+}
+
+/* 트랜지션 */
+.transition-hud {
+  transition: all 0.2s ease-out;
+}
+
+/* 버튼 글로우 */
+.btn-glow {
+  box-shadow: var(--shadow-hud-glow);
+}
