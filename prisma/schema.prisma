@@ -17,28 +17,62 @@ enum AgentStatus {
   suspended
 }
 
+enum DealType {
+  sale
+  jeonse
+  wolse
+}
+
+enum PropertyType {
+  apartment
+  officetel
+  villa
+  house
+  commercial
+  land
+}
+
+enum ListingStatus {
+  active
+  contracted
+  hidden
+}
+
+enum Direction {
+  north
+  east
+  south
+  west
+  northeast
+  southeast
+  southwest
+  northwest
+}
+
 model Agency {
-  id             Int      @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   name           String
   businessNumber String?
   phone          String?
   address        String?
   agents         Agent[]
-  createdAt      DateTime @default(now())
+  listings       InternalListing[]
+  createdAt      DateTime          @default(now())
 }
 
 model Agent {
-  id           Int         @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   agencyId     Int
-  agency       Agency      @relation(fields: [agencyId], references: [id])
-  email        String      @unique
+  agency       Agency            @relation(fields: [agencyId], references: [id])
+  email        String            @unique
   passwordHash String
   name         String
   phone        String?
-  role         Role        @default(member)
-  status       AgentStatus @default(active)
+  role         Role              @default(member)
+  status       AgentStatus       @default(active)
   sessions     Session[]
-  createdAt    DateTime    @default(now())
+  listings     InternalListing[] @relation("createdBy")
+  createdAt    DateTime          @default(now())
 
   @@index([agencyId])
 }
@@ -52,4 +86,81 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([agentId])
+}
+
+model InternalListing {
+  id          Int    @id @default(autoincrement())
+  agencyId    Int
+  agency      Agency @relation(fields: [agencyId], references: [id])
+  createdById Int
+  createdBy   Agent  @relation("createdBy", fields: [createdById], references: [id])
+
+  title       String
+  complexName String?
+  dong        String?
+  ho          String?
+  floor       String?
+  direction   Direction?
+  pyeongType  String?
+
+  dealType     DealType
+  propertyType PropertyType
+  salePrice    BigInt?
+  deposit      BigInt?
+  monthlyRent  BigInt?
+
+  areaM2       Decimal  @db.Decimal(8, 2)
+  supplyAreaM2 Decimal? @db.Decimal(8, 2)
+
+  address       String
+  roadAddress   String?
+  addressDetail String?
+  latitude      Float?
+  longitude     Float?
+
+  maintenanceFee      Int?
+  availableMoveInDate DateTime?
+  ownerName           String?
+  ownerPhone          String?
+  ownerMemo           String?
+  commissionRate      Decimal?  @db.Decimal(4, 2)
+  description         String?
+  privateMemo         String?
+
+  status          ListingStatus @default(active)
+  contractedAt    DateTime?
+  contractedPrice BigInt?
+
+  photos    ListingPhoto[]
+  contracts ListingContract[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model ListingPhoto {
+  id        Int             @id @default(autoincrement())
+  listingId Int
+  listing   InternalListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+
+  @@index([listingId])
+}
+
+model ListingContract {
+  id         Int             @id @default(autoincrement())
+  listingId  Int
+  listing    InternalListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url        String
+  filename   String
+  uploadedAt DateTime        @default(now())
+
+  @@index([listingId])
 }
