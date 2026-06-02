@@ -5,6 +5,7 @@ import { Building2, User, KeyRound, Users, Palette } from 'lucide-react'
 import AgencySection from '@/components/settings/AgencySection'
 import AccountSection from '@/components/settings/AccountSection'
 import PasswordSection from '@/components/settings/PasswordSection'
+import AgentsSection from '@/components/settings/AgentsSection'
 
 const SECTIONS = [
   { key: 'agency', label: '사무소 정보', icon: Building2 },
@@ -46,7 +47,7 @@ export default function SettingsPage() {
         {current === 'agency' && <AgencySection />}
         {current === 'account' && <AccountSection />}
         {current === 'password' && <PasswordSection />}
-        {current === 'agents' && <p className="text-hud-text-muted">중개사 관리 (Task 23에서 구현)</p>}
+        {current === 'agents' && <AgentsSection />}
         {current === 'appearance' && <p className="text-hud-text-muted">외관 설정은 후속 작업에서 추가됩니다.</p>}
       </div>
     </div>
