@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET } from '@/app/api/naver/complexes/route'
-import { _complexesCache } from '@/app/api/naver/complexes/route'
+import { complexesCache } from '@/lib/naver-route-caches'
 
 beforeEach(() => {
-  _complexesCache.clear()
+  complexesCache.clear()
 })
 afterEach(() => vi.restoreAllMocks())
 

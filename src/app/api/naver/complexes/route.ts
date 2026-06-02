@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server'
 import { fetchComplexes, NaverUpstreamError } from '@/lib/naver-client'
-import { createCache } from '@/lib/naver-cache'
 import { errorResponse } from '@/lib/auth-helpers'
-import type { ComplexesResponse, TradeTypeCode, RealEstateTypeCode } from '@/lib/naver-types'
-
-/** 테스트에서 invalidate 가능하도록 export. 운영 시에는 직접 접근 안 함. */
-export const _complexesCache = createCache<ComplexesResponse>({
-  maxEntries: 200,
-  ttlMs: 5 * 60_000,
-})
+import { complexesCache } from '@/lib/naver-route-caches'
+import type { TradeTypeCode, RealEstateTypeCode } from '@/lib/naver-types'
 
 function naverErrorResponse(err: NaverUpstreamError): NextResponse {
   return NextResponse.json(
@@ -31,14 +25,14 @@ export async function GET(req: Request): Promise<NextResponse> {
     const realEstateTypes = (url.searchParams.get('realEstate') ?? '').split(',').filter(Boolean) as RealEstateTypeCode[]
     const cacheKey = `${eupCode}|${tradeTypes.join(':')}|${realEstateTypes.join(':')}`
 
-    const cached = _complexesCache.get(cacheKey)
+    const cached = complexesCache.get(cacheKey)
     if (cached) {
       return NextResponse.json(cached, { headers: { 'x-cache': 'hit' } })
     }
 
     try {
       const result = await fetchComplexes({ eupCode, tradeTypes, realEstateTypes })
-      _complexesCache.set(cacheKey, result)
+      complexesCache.set(cacheKey, result)
       return NextResponse.json(result, { headers: { 'x-cache': 'miss' } })
     } catch (e) {
       if (e instanceof NaverUpstreamError) return naverErrorResponse(e)

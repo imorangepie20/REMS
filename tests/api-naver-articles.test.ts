@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { POST, _articlesCache } from '@/app/api/naver/articles/route'
+import { POST } from '@/app/api/naver/articles/route'
+import { articlesCache } from '@/lib/naver-route-caches'
 
 beforeEach(() => {
-  _articlesCache.clear()
+  articlesCache.clear()
 })
 afterEach(() => vi.restoreAllMocks())
 

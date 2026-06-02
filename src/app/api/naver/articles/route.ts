@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
 import { fetchArticles, NaverUpstreamError } from '@/lib/naver-client'
-import { createCache } from '@/lib/naver-cache'
 import { errorResponse } from '@/lib/auth-helpers'
-import type { ArticlesResponse, TradeTypeCode } from '@/lib/naver-types'
-
-export const _articlesCache = createCache<ArticlesResponse>({
-  maxEntries: 200,
-  ttlMs: 5 * 60_000,
-})
+import { articlesCache } from '@/lib/naver-route-caches'
+import type { TradeTypeCode } from '@/lib/naver-types'
 
 interface ArticlesRequestBody {
   complexNumber?: string
@@ -35,7 +30,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     const tradeTypes = body.tradeTypes ?? []
     const cacheKey = `${body.complexNumber}|${tradeTypes.join(':')}|${(body.pyeongTypes ?? []).join(':')}|${(body.dongNumbers ?? []).join(':')}`
 
-    const cached = _articlesCache.get(cacheKey)
+    const cached = articlesCache.get(cacheKey)
     if (cached) {
       return NextResponse.json(cached, { headers: { 'x-cache': 'hit' } })
     }
@@ -47,7 +42,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         pyeongTypes: body.pyeongTypes,
         dongNumbers: body.dongNumbers,
       })
-      _articlesCache.set(cacheKey, result)
+      articlesCache.set(cacheKey, result)
       return NextResponse.json(result, { headers: { 'x-cache': 'miss' } })
     } catch (e) {
       if (e instanceof NaverUpstreamError) return naverErrorResponse(e)
