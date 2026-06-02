@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Building2, User, KeyRound, Users, Palette } from 'lucide-react'
+import AgencySection from '@/components/settings/AgencySection'
+import AccountSection from '@/components/settings/AccountSection'
+import PasswordSection from '@/components/settings/PasswordSection'
 
 const SECTIONS = [
   { key: 'agency', label: '사무소 정보', icon: Building2 },
@@ -40,9 +43,9 @@ export default function SettingsPage() {
       </nav>
 
       <div className="flex-1 p-6">
-        {current === 'agency' && <p className="text-hud-text-muted">사무소 정보 (Task 22에서 구현)</p>}
-        {current === 'account' && <p className="text-hud-text-muted">내 계정 (Task 22에서 구현)</p>}
-        {current === 'password' && <p className="text-hud-text-muted">비밀번호 변경 (Task 22에서 구현)</p>}
+        {current === 'agency' && <AgencySection />}
+        {current === 'account' && <AccountSection />}
+        {current === 'password' && <PasswordSection />}
         {current === 'agents' && <p className="text-hud-text-muted">중개사 관리 (Task 23에서 구현)</p>}
         {current === 'appearance' && <p className="text-hud-text-muted">외관 설정은 후속 작업에서 추가됩니다.</p>}
       </div>
