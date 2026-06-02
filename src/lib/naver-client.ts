@@ -45,7 +45,7 @@ async function call<T>(url: string, init: RequestInit = {}): Promise<T> {
   if (res.status === 404) {
     throw new NaverUpstreamError('NOT_FOUND', '없는 리소스', 404)
   }
-  if (res.status >= 500 || res.status >= 400) {
+  if (res.status >= 400) {
     throw new NaverUpstreamError('UPSTREAM_ERROR', `네이버 응답 ${res.status}`, res.status)
   }
   return (await res.json()) as T

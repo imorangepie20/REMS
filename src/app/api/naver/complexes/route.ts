@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fetchComplexes, NaverUpstreamError } from '@/lib/naver-client'
-import { errorResponse } from '@/lib/auth-helpers'
+import { errorResponse, requireAuth } from '@/lib/auth-helpers'
 import { complexesCache } from '@/lib/naver-route-caches'
 import type { TradeTypeCode, RealEstateTypeCode } from '@/lib/naver-types'
 
@@ -13,6 +13,7 @@ function naverErrorResponse(err: NaverUpstreamError): NextResponse {
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
+    await requireAuth(req)
     const url = new URL(req.url)
     const eupCode = url.searchParams.get('eupCode')
     if (!eupCode) {

@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/naver/articles/route'
+import { POST as signupHandler } from '@/app/api/auth/signup/route'
 import { articlesCache } from '@/lib/naver-route-caches'
+import { resetDb, signupAgent, type SignupResult } from './helpers'
 
-beforeEach(() => {
+let session: SignupResult
+
+beforeEach(async () => {
+  await resetDb()
   articlesCache.clear()
+  session = await signupAgent(signupHandler)
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -18,14 +24,27 @@ function mockArticleFetchOnce(articles: Array<{ articleNo: string; tradeTypeCode
     }), { status: 200, headers: { 'content-type': 'application/json' } }))
 }
 
+function authReq(body: string): Request {
+  return new Request('http://localhost/api/naver/articles', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie: session.cookie },
+    body,
+  })
+}
+
 describe('POST /api/naver/articles', () => {
-  it('complexNumber + tradeTypes → fetch + 정규화', async () => {
-    mockArticleFetchOnce([{ articleNo: '999', tradeTypeCode: 'A1' }])
+  it('비로그인 → 401', async () => {
     const res = await POST(new Request('http://localhost/api/naver/articles', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ complexNumber: '102614', tradeTypes: ['A1'] }),
     }))
+    expect(res.status).toBe(401)
+  })
+
+  it('complexNumber + tradeTypes → fetch + 정규화', async () => {
+    mockArticleFetchOnce([{ articleNo: '999', tradeTypeCode: 'A1' }])
+    const res = await POST(authReq(JSON.stringify({ complexNumber: '102614', tradeTypes: ['A1'] })))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.articles).toHaveLength(1)
@@ -38,21 +57,13 @@ describe('POST /api/naver/articles', () => {
         data: { articleList: [{ articleNo: 'x', tradeTypeCode: 'A1' }], totalCount: 1, hasMore: false },
       }), { status: 200 }))
     const payload = JSON.stringify({ complexNumber: '102614', tradeTypes: ['A1'] })
-    await POST(new Request('http://localhost/api/naver/articles', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: payload,
-    }))
-    await POST(new Request('http://localhost/api/naver/articles', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: payload,
-    }))
+    await POST(authReq(payload))
+    await POST(authReq(payload))
     expect(spy).toHaveBeenCalledTimes(1)
   })
 
   it('complexNumber 없으면 400', async () => {
-    const res = await POST(new Request('http://localhost/api/naver/articles', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ tradeTypes: ['A1'] }),
-    }))
+    const res = await POST(authReq(JSON.stringify({ tradeTypes: ['A1'] })))
     expect(res.status).toBe(400)
   })
 })

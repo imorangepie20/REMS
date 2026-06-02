@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fetchArticles, NaverUpstreamError } from '@/lib/naver-client'
-import { errorResponse } from '@/lib/auth-helpers'
+import { errorResponse, requireAuth } from '@/lib/auth-helpers'
 import { articlesCache } from '@/lib/naver-route-caches'
 import type { TradeTypeCode } from '@/lib/naver-types'
 
@@ -20,6 +20,7 @@ function naverErrorResponse(err: NaverUpstreamError): NextResponse {
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
+    await requireAuth(req)
     const body = (await req.json()) as ArticlesRequestBody
     if (!body.complexNumber) {
       return NextResponse.json(
