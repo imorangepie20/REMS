@@ -43,3 +43,6 @@ next-env.d.ts
 
 # carryover from previous REMS v1 (temporary, removed in Task 11)
 _carryover/
+
+# user uploads
+public/uploads/
