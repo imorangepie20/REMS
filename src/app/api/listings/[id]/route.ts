@@ -88,3 +88,28 @@ export async function PATCH(
     return errorResponse(err)
   }
 }
+
+export async function DELETE(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  try {
+    const me = await requireAuth(req)
+    const { id } = await ctx.params
+    const targetId = Number(id)
+    if (!Number.isFinite(targetId)) throw new NotFoundError('없는 매물입니다')
+
+    const existing = await prisma.internalListing.findUnique({ where: { id: targetId } })
+    if (!existing || existing.agencyId !== me.agencyId) {
+      throw new NotFoundError('없는 매물입니다')
+    }
+    if (!canWriteListing(existing, me)) {
+      throw new ForbiddenError('본인 매물 또는 owner만 삭제할 수 있습니다')
+    }
+
+    await prisma.internalListing.delete({ where: { id: targetId } })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return errorResponse(err)
+  }
+}
