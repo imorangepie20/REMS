@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAuth, errorResponse } from '@/lib/auth-helpers'
-import { createListingSchema } from '@/lib/validators'
+import { createListingSchema, listingQuerySchema } from '@/lib/validators'
 import { projectListing } from '@/lib/listing-helpers'
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -43,6 +43,46 @@ export async function POST(req: Request): Promise<NextResponse> {
       },
     })
     return NextResponse.json(projectListing(created, me))
+  } catch (err) {
+    return errorResponse(err)
+  }
+}
+
+export async function GET(req: Request): Promise<NextResponse> {
+  try {
+    const me = await requireAuth(req)
+    const url = new URL(req.url)
+    const query = listingQuerySchema.parse(Object.fromEntries(url.searchParams))
+
+    const where = {
+      agencyId: me.agencyId,
+      ...(query.dealType && { dealType: query.dealType }),
+      ...(query.status && { status: query.status }),
+      ...(query.q && {
+        OR: [
+          { title: { contains: query.q } },
+          { address: { contains: query.q } },
+          { complexName: { contains: query.q } },
+        ],
+      }),
+    }
+
+    const [total, rows] = await Promise.all([
+      prisma.internalListing.count({ where }),
+      prisma.internalListing.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+    ])
+
+    return NextResponse.json({
+      data: rows.map((r) => projectListing(r, me)),
+      total,
+      page: query.page,
+      limit: query.limit,
+    })
   } catch (err) {
     return errorResponse(err)
   }
