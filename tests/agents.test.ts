@@ -3,6 +3,7 @@ import { resetDb, signupAgent, addMember } from './helpers'
 import { POST as signupHandler } from '@/app/api/auth/signup/route'
 import { POST as loginHandler } from '@/app/api/auth/login/route'
 import { GET as listAgents, POST as createAgent } from '@/app/api/agents/route'
+import { PATCH as updateAgent } from '@/app/api/agents/[id]/route'
 
 beforeEach(async () => { await resetDb() })
 
@@ -76,5 +77,67 @@ describe('POST /api/agents', () => {
       method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: payload,
     }))
     expect(second.status).toBe(409)
+  })
+})
+
+describe('PATCH /api/agents/[id]', () => {
+  it('본인 — name/phone 수정 200', async () => {
+    const { agentId, cookie } = await signupAgent(signupHandler, { email: 'self@x.com', password: 'pw12345678' })
+    const res = await updateAgent(
+      new Request(`http://localhost/api/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ name: '바꿈', phone: '010-0000-0000' }),
+      }),
+      { params: Promise.resolve({ id: String(agentId) }) },
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.name).toBe('바꿈')
+  })
+
+  it('member — 다른 사람 수정 시도 403', async () => {
+    const { agencyId } = await signupAgent(signupHandler, { email: 'o5@x.com', password: 'pw12345678' })
+    const m1 = await addMember(agencyId, { email: 'mm1@x.com' })
+    const m2 = await addMember(agencyId, { email: 'mm2@x.com' })
+    const cookie = await loginCookie(m1.email, m1.password)
+    const res = await updateAgent(
+      new Request(`http://localhost/api/agents/${m2.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ name: 'x' }),
+      }),
+      { params: Promise.resolve({ id: String(m2.id) }) },
+    )
+    expect(res.status).toBe(403)
+  })
+
+  it('owner — 멤버 status 변경 200', async () => {
+    const { agencyId, cookie } = await signupAgent(signupHandler, { email: 'o6@x.com', password: 'pw12345678' })
+    const m = await addMember(agencyId)
+    const res = await updateAgent(
+      new Request(`http://localhost/api/agents/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ status: 'suspended' }),
+      }),
+      { params: Promise.resolve({ id: String(m.id) }) },
+    )
+    expect(res.status).toBe(200)
+  })
+
+  it('member — 자기 status 변경 시도 403', async () => {
+    const { agencyId } = await signupAgent(signupHandler, { email: 'o7@x.com', password: 'pw12345678' })
+    const m = await addMember(agencyId)
+    const cookie = await loginCookie(m.email, m.password)
+    const res = await updateAgent(
+      new Request(`http://localhost/api/agents/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ status: 'suspended' }),
+      }),
+      { params: Promise.resolve({ id: String(m.id) }) },
+    )
+    expect(res.status).toBe(403)
   })
 })
