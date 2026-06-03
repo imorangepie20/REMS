@@ -24,16 +24,14 @@ const SIDO_LIST = [
   '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시',
   '대전광역시', '울산광역시', '세종특별자치시',
   '경기도', '강원특별자치도', '충청북도', '충청남도',
-  '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도',
+  '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도',
 ]
 
 interface VWorldItem {
-  id: string         // 10자리 법정동 코드 (동의 경우)
-  text: string       // 전체 명칭 (예: "경기도 수원시 장안구 정자동")
-  level?: string     // SIDO | SIGUNGU | DONG | RI
+  id: string         // 8자리 법정동 코드 (VWorld L4); 우리는 끝에 "00" 붙여 10자리로 정규화
+  title: string      // 전체 명칭 (예: "경기도 수원시 장안구 정자동")
+  geometry?: string
   point?: { x: string; y: string }  // x=경도, y=위도 (EPSG:4326)
-  type?: string
-  category?: string
 }
 
 interface VWorldResponse {
@@ -55,7 +53,7 @@ async function searchDistricts(query: string, page: number, key: string): Promis
   url.searchParams.set('page', String(page))
   url.searchParams.set('query', query)
   url.searchParams.set('type', 'DISTRICT')
-  url.searchParams.set('category', 'L')  // L=법정, A=행정
+  url.searchParams.set('category', 'L4')  // L4 = 법정동(읍면동), L3=시군구, L2=구, L1=시도
   url.searchParams.set('format', 'json')
   url.searchParams.set('errorformat', 'json')
   url.searchParams.set('key', key)
@@ -80,26 +78,31 @@ function parseRegion(item: VWorldItem): {
   latitude: number
   longitude: number
 } | null {
-  if (item.level !== 'DONG') return null
   if (!item.point) return null
   const lng = Number(item.point.x)
   const lat = Number(item.point.y)
   if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null
-  if (!/^\d{10}$/.test(item.id)) return null
+  // VWorld L4의 id는 8자리. 네이버 eupLegalDivisionNumber는 10자리 (끝 2자리 = 리 코드).
+  // 동 자체를 가리키려면 "00"을 append.
+  if (!/^\d{8}$/.test(item.id)) return null
+  const code = item.id + '00'
 
-  // text: "경기도 수원시 장안구 정자동" 또는 "서울특별시 강남구 역삼동"
-  const parts = item.text.split(/\s+/).filter(Boolean)
-  if (parts.length < 3) return null
+  // title 패턴:
+  //   "경기도 수원시 장안구 정자동" (4단어, 시도+시군+구+동)
+  //   "서울특별시 강남구 역삼동" (3단어, 시도+구+동)
+  //   "세종특별자치시 반곡동" (2단어, 광역시 직속 — 시군구 없음)
+  const parts = item.title.split(/\s+/).filter(Boolean)
+  if (parts.length < 2) return null
   const sido = parts[0]
   const eup = parts[parts.length - 1]
-  const sigungu = parts.slice(1, -1).join(' ')
+  const sigungu = parts.length >= 3 ? parts.slice(1, -1).join(' ') : ''
 
-  return { code: item.id, sido, sigungu, eup, latitude: lat, longitude: lng }
+  return { code, sido, sigungu, eup, latitude: lat, longitude: lng }
 }
 
 async function importSido(sidoName: string, key: string): Promise<{ added: number; updated: number }> {
   let added = 0
-  let updated = 0
+  const updated = 0
   for (let page = 1; page < 100; page++) {
     let items: VWorldItem[]
     try {
@@ -110,19 +113,19 @@ async function importSido(sidoName: string, key: string): Promise<{ added: numbe
     }
     if (items.length === 0) break
 
-    for (const it of items) {
-      const r = parseRegion(it)
-      if (!r) continue
-      const existing = await prisma.region.findUnique({ where: { code: r.code } })
-      if (existing) {
-        await prisma.region.update({ where: { code: r.code }, data: r })
-        updated++
-      } else {
-        await prisma.region.create({ data: r })
-        added++
-      }
+    const parsed = items.map(parseRegion).filter((r): r is NonNullable<ReturnType<typeof parseRegion>> => r !== null)
+
+    for (const r of parsed) {
+      const result = await prisma.region.upsert({
+        where: { code: r.code },
+        create: r,
+        update: r,
+      })
+      // upsert는 결과만으로 added/updated 구분이 어려움 — 합쳐서 표시
+      void result
+      added++
     }
-    process.stdout.write(`  [${sidoName} p${page}] +${items.length} items (acc add=${added} upd=${updated})\n`)
+    process.stdout.write(`  [${sidoName} p${page}] +${parsed.length}/${items.length} valid (총 누적 ${added})\n`)
     if (items.length < 1000) break
   }
   return { added, updated }
