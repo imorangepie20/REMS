@@ -46,3 +46,6 @@ _carryover/
 
 # user uploads
 public/uploads/
+
+# Claude harness runtime state
+.claude/scheduled_tasks.lock
