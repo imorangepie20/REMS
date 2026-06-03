@@ -171,19 +171,31 @@ export interface FetchComplexesInput {
 }
 
 interface UpstreamComplexesBody {
-  data?: {
-    complexList?: Array<{
-      complexNumber: string
-      complexName: string
-      totalAddress?: string | null
-      latitude?: number | null
-      longitude?: number | null
-      totalHouseholdCount?: number | null
-      completionYear?: number | null
-      complexTypeCode?: string | null
-      articleCount?: number | null
-    }>
+  isSuccess?: boolean
+  result?: {
+    hasNextPage?: boolean
     totalCount?: number
+    list?: Array<{
+      complexInfo?: {
+        complexNumber: number | string
+        name: string
+        type?: string
+        totalHouseholdNumber?: number
+        useApprovalDate?: string  // "20040701"
+        approvalElapsedYear?: number
+        roadNameAddress?: string
+        addressMain?: string
+        addressSub?: string
+        latitude?: number
+        longitude?: number
+      }
+      articleCountInfo?: {
+        dealCount?: number
+        leaseDepositCount?: number
+        leaseMonthlyCount?: number
+        leaseShortTerm?: number
+      }
+    }>
   }
 }
 
@@ -197,20 +209,30 @@ export async function fetchComplexes(input: FetchComplexesInput): Promise<Comple
   if (input.tradeTypes.length) params.set('tradeTypes', input.tradeTypes.join(':'))
   if (input.realEstateTypes.length) params.set('realEstateTypes', input.realEstateTypes.join(':'))
   const body = await call<UpstreamComplexesBody>(`${BASE}/complex/region?${params.toString()}`)
-  const list = body.data?.complexList ?? []
+  const list = body.result?.list ?? []
   return {
-    complexes: list.map((c) => ({
-      complexNumber: c.complexNumber,
-      complexName: c.complexName,
-      address: c.totalAddress ?? '',
-      latitude: c.latitude ?? null,
-      longitude: c.longitude ?? null,
-      householdCount: c.totalHouseholdCount ?? null,
-      builtYear: c.completionYear ?? null,
-      complexType: c.complexTypeCode ?? null,
-      totalArticleCount: c.articleCount ?? null,
-    })),
-    total: body.data?.totalCount ?? list.length,
+    complexes: list.map((c) => {
+      const ci = c.complexInfo
+      const ac = c.articleCountInfo
+      const totalArticles = ac
+        ? (ac.dealCount ?? 0) + (ac.leaseDepositCount ?? 0) + (ac.leaseMonthlyCount ?? 0) + (ac.leaseShortTerm ?? 0)
+        : null
+      const builtYear = ci?.useApprovalDate && ci.useApprovalDate.length >= 4
+        ? Number(ci.useApprovalDate.slice(0, 4))
+        : null
+      return {
+        complexNumber: ci ? String(ci.complexNumber) : '',
+        complexName: ci?.name ?? '',
+        address: ci?.roadNameAddress ?? ci?.addressMain ?? '',
+        latitude: ci?.latitude ?? null,
+        longitude: ci?.longitude ?? null,
+        householdCount: ci?.totalHouseholdNumber ?? null,
+        builtYear,
+        complexType: ci?.type ?? null,
+        totalArticleCount: totalArticles,
+      }
+    }),
+    total: body.result?.totalCount ?? list.length,
   }
 }
 

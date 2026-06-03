@@ -16,9 +16,13 @@ afterEach(() => vi.restoreAllMocks())
 function mockComplexFetchOnce(complexes: Array<{ complexNumber: string; complexName: string }>) {
   vi.spyOn(global, 'fetch').mockImplementationOnce(async () =>
     new Response(JSON.stringify({
-      data: {
-        complexList: complexes.map((c) => ({ ...c, totalAddress: '주소' })),
+      isSuccess: true,
+      result: {
         totalCount: complexes.length,
+        list: complexes.map((c) => ({
+          complexInfo: { complexNumber: Number(c.complexNumber), name: c.complexName, roadNameAddress: '주소' },
+          articleCountInfo: { dealCount: 0, leaseDepositCount: 0, leaseMonthlyCount: 0, leaseShortTerm: 0 },
+        })),
       },
     }), { status: 200, headers: { 'content-type': 'application/json' } }))
 }
@@ -45,7 +49,8 @@ describe('GET /api/naver/complexes', () => {
   it('같은 쿼리 두 번 호출 → 두 번째는 캐시', async () => {
     const spy = vi.spyOn(global, 'fetch').mockImplementation(async () =>
       new Response(JSON.stringify({
-        data: { complexList: [{ complexNumber: '1', complexName: 'A' }], totalCount: 1 },
+        isSuccess: true,
+        result: { totalCount: 1, list: [{ complexInfo: { complexNumber: 1, name: 'A' } }] },
       }), { status: 200 }))
     const url = 'http://localhost/api/naver/complexes?eupCode=4111113000&trade=A1&realEstate=A01'
     await GET(authReq(url))

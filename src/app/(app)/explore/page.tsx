@@ -2,18 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Map as MapIcon } from 'lucide-react'
+import { Map as MapIcon, Search } from 'lucide-react'
 import { RegionPicker } from '@/components/explore/RegionPicker'
 import { FilterBar } from '@/components/explore/FilterBar'
 import { ComplexList } from '@/components/explore/ComplexList'
 import { ArticleTable } from '@/components/explore/ArticleTable'
 import { KakaoMap, type MapMarker } from '@/components/KakaoMap'
+import Button from '@/components/common/Button'
 import { apiFetch } from '@/lib/api-client'
 import type {
   RegionEntry, NaverComplex, ComplexesResponse,
   TradeTypeCode, RealEstateTypeCode,
 } from '@/lib/naver-types'
-import { getRegionByCode } from '@/lib/regions-data'
 
 const DEFAULT_TRADE: TradeTypeCode[] = ['A1']
 const DEFAULT_REAL_ESTATE: RealEstateTypeCode[] = ['A01']
@@ -27,10 +27,24 @@ export default function ExplorePage() {
   const realEstateTypes = (params.get('realEstate') || DEFAULT_REAL_ESTATE.join(',')).split(',').filter(Boolean) as RealEstateTypeCode[]
   const selectedComplex = params.get('complex')
 
-  const [region, setRegion] = useState<RegionEntry | null>(eupCode ? getRegionByCode(eupCode) ?? null : null)
+  const [region, setRegion] = useState<RegionEntry | null>(null)
   const [complexes, setComplexes] = useState<NaverComplex[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // URL의 eupCode로 region 복원 (DB lookup)
+  useEffect(() => {
+    if (!eupCode) { setRegion(null); return }
+    let cancelled = false
+    apiFetch<{ regions: RegionEntry[] }>(`/naver/regions?q=${encodeURIComponent(eupCode)}`)
+      .then((r) => {
+        if (cancelled) return
+        const found = r.regions.find((x) => x.legalDivisionNumber === eupCode)
+        if (found) setRegion(found)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [eupCode])
 
   const updateUrl = useCallback((next: Record<string, string | undefined>) => {
     const sp = new URLSearchParams(params.toString())
@@ -41,21 +55,26 @@ export default function ExplorePage() {
     router.replace(`/explore?${sp.toString()}`)
   }, [params, router])
 
-  // eupCode 변경 → complexes fetch
-  useEffect(() => {
-    if (!eupCode) { setComplexes([]); return }
-    let cancelled = false
+  const runSearch = useCallback(async () => {
+    if (!eupCode) {
+      setError('지역을 먼저 선택하세요')
+      return
+    }
     setLoading(true); setError(null)
-    const qs = new URLSearchParams({
-      eupCode,
-      trade: tradeTypes.join(','),
-      realEstate: realEstateTypes.join(','),
-    })
-    apiFetch<ComplexesResponse>(`/naver/complexes?${qs.toString()}`)
-      .then((r) => { if (!cancelled) setComplexes(r.complexes) })
-      .catch((e: Error) => { if (!cancelled) setError(e.message) })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+    try {
+      const qs = new URLSearchParams({
+        eupCode,
+        trade: tradeTypes.join(','),
+        realEstate: realEstateTypes.join(','),
+      })
+      const r = await apiFetch<ComplexesResponse>(`/naver/complexes?${qs.toString()}`)
+      setComplexes(r.complexes)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '검색 실패')
+      setComplexes([])
+    } finally {
+      setLoading(false)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eupCode, tradeTypes.join(','), realEstateTypes.join(',')])
 
@@ -84,6 +103,15 @@ export default function ExplorePage() {
             realEstateTypes={realEstateTypes}
             onRealEstateChange={onRealEstateChange}
           />
+          <Button
+            variant="primary"
+            glow
+            leftIcon={<Search size={14} />}
+            onClick={runSearch}
+            disabled={loading || !eupCode}
+          >
+            {loading ? '검색 중...' : '검색'}
+          </Button>
         </div>
         {error && <p className="text-sm text-hud-accent-danger">{error}</p>}
       </div>
@@ -99,7 +127,9 @@ export default function ExplorePage() {
           {markers.length === 0 && !loading && (
             <div className="absolute inset-0 flex items-center justify-center text-hud-text-muted text-sm">
               <MapIcon size={16} className="mr-2" />
-              지역을 선택하면 단지가 표시됩니다
+              {eupCode
+                ? '"검색" 버튼을 눌러 단지를 불러오세요'
+                : '지역을 선택하고 "검색" 버튼을 누르세요'}
             </div>
           )}
           <KakaoMap markers={markers} center={mapCenter} onMarkerClick={onMarkerClick} className="w-full h-full" />

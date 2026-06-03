@@ -12,19 +12,28 @@ function mockJsonOnce(status: number, body: unknown) {
 describe('fetchComplexes', () => {
   it('정상 응답 → 정규화된 객체 반환', async () => {
     mockJsonOnce(200, {
-      data: {
-        complexList: [{
-          complexNumber: '102614',
-          complexName: '테스트단지',
-          totalAddress: '경기도 수원시 장안구 정자동',
-          latitude: 37.30,
-          longitude: 126.97,
-          totalHouseholdCount: 1234,
-          completionYear: 2015,
-          complexTypeCode: 'APT',
-          articleCount: 12,
-        }],
+      isSuccess: true,
+      result: {
+        hasNextPage: false,
         totalCount: 1,
+        list: [{
+          complexInfo: {
+            complexNumber: 102614,
+            name: '테스트단지',
+            type: 'A01',
+            totalHouseholdNumber: 1234,
+            useApprovalDate: '20150601',
+            roadNameAddress: '경기도 수원시 장안구 정자동',
+            latitude: 37.30,
+            longitude: 126.97,
+          },
+          articleCountInfo: {
+            dealCount: 8,
+            leaseDepositCount: 3,
+            leaseMonthlyCount: 1,
+            leaseShortTerm: 0,
+          },
+        }],
       },
     })
     const res = await fetchComplexes({ eupCode: '4111113000', tradeTypes: ['A1'], realEstateTypes: ['A01'] })
@@ -33,12 +42,14 @@ describe('fetchComplexes', () => {
     expect(res.complexes[0].complexName).toBe('테스트단지')
     expect(res.complexes[0].latitude).toBe(37.30)
     expect(res.complexes[0].householdCount).toBe(1234)
+    expect(res.complexes[0].builtYear).toBe(2015)
+    expect(res.complexes[0].totalArticleCount).toBe(12)
     expect(res.total).toBe(1)
   })
 
   it('Referer 헤더 부착', async () => {
     const spy = vi.spyOn(global, 'fetch').mockImplementationOnce(async () =>
-      new Response(JSON.stringify({ data: { complexList: [], totalCount: 0 } }), { status: 200 }))
+      new Response(JSON.stringify({ isSuccess: true, result: { list: [], totalCount: 0 } }), { status: 200 }))
     await fetchComplexes({ eupCode: '4111113000', tradeTypes: ['A1'], realEstateTypes: ['A01'] })
     const init = spy.mock.calls[0][1] as RequestInit
     const headers = init.headers as Record<string, string>
