@@ -164,3 +164,19 @@ model ListingContract {
 
   @@index([listingId])
 }
+
+model Region {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique  // 10자리 법정동코드 (예: "4111113000")
+  sido      String              // 시도명 (예: "경기도")
+  sigungu   String              // 시군구명 (예: "수원시 장안구")
+  eup       String              // 읍면동명 (예: "정자동")
+  latitude  Float               // 중심점 위도
+  longitude Float               // 중심점 경도
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sido])
+  @@index([sigungu])
+  @@index([eup])
+}
