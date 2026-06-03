@@ -3,6 +3,9 @@ import { hashPassword } from '@/lib/password'
 
 export async function resetDb(): Promise<void> {
   // 외래키 의존 순서 역방향
+  await prisma.listingContract.deleteMany()
+  await prisma.listingPhoto.deleteMany()
+  await prisma.internalListing.deleteMany()
   await prisma.session.deleteMany()
   await prisma.agent.deleteMany()
   await prisma.agency.deleteMany()
